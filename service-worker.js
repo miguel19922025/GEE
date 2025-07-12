@@ -1,8 +1,9 @@
 // service-worker.js
 const CACHE_NAME = 'gee-app-v1';
 const urlsToCache = [
-  // IMPORTANTE: Reemplaza YOUR_GITHUB_REPO_NAME con el nombre de tu repositorio de GitHub (ej. GEE-App)
-  '/YOUR_GITHUB_REPO_NAME/', // La raíz de tu aplicación ahora será /YOUR_GITHUB_REPO_NAME/
+  // IMPORTANTE: Reemplaza 'YOUR_GITHUB_REPO_NAME' con el nombre EXACTO de tu repositorio de GitHub (ej. 'mi-app-gee').
+  // Si tu aplicación está en la raíz de un dominio personalizado (ej. 'midominio.com'), puedes usar '/' en su lugar.
+  '/YOUR_GITHUB_REPO_NAME/', // La raíz de tu aplicación en GitHub Pages
   '/YOUR_GITHUB_REPO_NAME/index.html',
   '/YOUR_GITHUB_REPO_NAME/manifest.json',
   '/YOUR_GITHUB_REPO_NAME/service-worker.js',
