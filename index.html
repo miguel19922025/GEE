@@ -166,7 +166,7 @@
         body.overdue-page-background {
             background-color: #ffebeb; /* Un rojo muy claro para el fondo */
             /* Marca de agua "VENCIDO" repetida */
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjUwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCBxPSIxMjUiIHk9IjEyNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjQwIiBmaWxsPSIjZmYwMDAwIiBmaWxsLW9wYWNpdHk9IjAuMDciIHRyYW5zZm9ybT0icm90YXRlKC00NSAxMjUgMTI1KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VkVOQ0lETzwvdGV4dD48L2x2Zz4=');
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjUwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCBxPSIxMjUiIHk9IjEyNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjQwIiBmaWxsPSIjZmYwMDAwIiBfiWxsLW9wYWNpdHk9IjAuMDciIHRyYW5zZm9ybT0icm90YXRlKC00NSAxMjUgMTI1KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VkVOQ0lETzwvdGV4dD48L2x2Zz4=');
             background-repeat: repeat; /* Repetir la marca de agua */
             background-attachment: fixed; /* Para que la marca de agua no se desplace con el scroll */
         }
@@ -371,6 +371,8 @@
                 </div>
             </div>
 
+            <div id="formMessageDisplay" class="hidden"></div> <!-- Nuevo: para mensajes de formulario -->
+
             <button
                 id="saveCambiosAceiteHibridosButton"
                 class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 btn-press"
@@ -544,6 +546,7 @@
         let firebaseConfig = {};
         // Declare a global variable to hold the reference to the message display element
         let formMessageDisplayElement = null; // Initialize as null
+        let isFirebaseReady = false; // Flag to indicate Firebase initialization and authentication status
 
         // Función para mostrar mensajes en el formulario
         let formMessageTimeout;
@@ -568,6 +571,8 @@
                 formMessageDisplayElement.classList.add('form-message-error');
             } else if (type === 'success') {
                 formMessageDisplayElement.classList.add('form-message-success');
+            } else if (type === 'warning') { // Added warning type
+                formMessageDisplayElement.classList.add('bg-yellow-100', 'text-yellow-800', 'border-yellow-200');
             }
 
             if (window.formMessageTimeout) {
@@ -578,6 +583,7 @@
             }, 2000); // 2 segundos
         }
         window.showFormMessage = showFormMessage; // Exponer globalmente
+        window.isFirebaseReady = () => isFirebaseReady; // Expose getter for firebase readiness
 
         // Intentar parsear firebaseConfig y validar
         if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
@@ -618,6 +624,7 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
+                        isFirebaseReady = true; // Firebase is ready after successful authentication
                         console.log('DEBUG: Firebase autenticado. ID de usuario:', userId);
                     } else {
                         console.log('DEBUG: Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
@@ -628,6 +635,7 @@
                                 await signInAnonymously(auth);
                             }
                             userId = auth.currentUser.uid;
+                            isFirebaseReady = true; // Firebase is ready after successful authentication
                             console.log('DEBUG: ID de usuario después del inicio de sesión anónimo:', userId);
                         } catch (error) {
                             console.error('ERROR: Fallo la autenticación de Firebase:', error);
@@ -637,16 +645,19 @@
                                 showFormMessage('Error de autenticación de Firebase. Verifica la consola para más detalles.', 'error');
                             }
                             userId = 'anonymous';
+                            isFirebaseReady = false; // Firebase is not ready if authentication fails
                         }
                     }
                 });
             } catch (error) {
                 console.error("ERROR: Fallo al inicializar Firebase:", error);
                 showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
+                isFirebaseReady = false; // Firebase is not ready if initialization fails
             }
         } else {
             // Este caso ya se maneja en el bloque de parseo y validación de firebaseConfig
             console.error("Firebase no se puede inicializar debido a una configuración inválida o faltante o con valores de marcador de posición (revisar mensajes anteriores).");
+            isFirebaseReady = false; // Firebase is not ready
         }
 
         // Exponer las variables y funciones de Firebase globalmente para el resto del script
@@ -787,7 +798,7 @@
                     console.log('EVENT: saveCambiosAceiteHibridosButton clicked.');
                     
                     // Asegurarse de que Firebase esté inicializado y el usuario autenticado
-                    if (!window.getUserId() || !window.db || !window.auth || !window.auth.currentUser) {
+                    if (!window.isFirebaseReady()) {
                         console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado.');
                         window.showFormMessage('Error: No se pudo guardar. Firebase no está listo o el usuario no está autenticado. Verifica la consola para más detalles.', 'error');
                         return;
@@ -891,6 +902,12 @@
                         window.showFormMessage('Por favor, selecciona un Site para revisar.', 'error'); // Mostrar mensaje en esta vista
                         return;
                     }
+
+                    if (!window.isFirebaseReady()) { // Check Firebase readiness
+                        window.showFormMessage('Error: Firebase no está listo para cargar datos.', 'error');
+                        return;
+                    }
+
                     if (currentSiteDisplay) currentSiteDisplay.textContent = `Site: ${selectedSite}`;
                     showView(displayCambiosAceiteHibridosDataView);
                     await loadConfig(); // Load configuration before loading data
@@ -943,6 +960,10 @@
              * Guarda la configuración actual de horas y frecuencia en Firestore.
              */
             async function saveConfig() {
+                if (!window.isFirebaseReady()) { // Check Firebase readiness
+                    console.error('Error: Firebase no está listo para guardar configuración.');
+                    return;
+                }
                 const currentUserId = window.getUserId();
                 const currentAppId = window.getAppId();
 
@@ -961,14 +982,18 @@
                     await window.setDoc(configDocRef, configData, { merge: true }); // Use merge: true to update specific fields
                     console.log('Configuración guardada con éxito.');
                 } catch (e) {
-                    console.error('Error al guardar configuración:', e);
+                        console.error('Error al guardar configuración:', e);
+                    }
                 }
-            }
 
             /**
              * Carga la configuración de horas y frecuencia desde Firestore.
              */
             async function loadConfig() {
+                if (!window.isFirebaseReady()) { // Check Firebase readiness
+                    console.error('Error: Firebase no está listo para cargar configuración.');
+                    return;
+                }
                 const currentUserId = window.getUserId();
                 const currentAppId = window.getAppId();
 
@@ -1104,6 +1129,13 @@
                 if (editWarningMessage) editWarningMessage.classList.add('hidden');
                 clearTimeout(warningTimeout);
 
+                if (!window.isFirebaseReady()) { // Check Firebase readiness
+                    if (errorMessage) errorMessage.textContent = 'Error: Firebase no está listo para cargar datos.';
+                    if (errorMessage) errorMessage.classList.remove('hidden');
+                    if (loadingMessage) loadingMessage.classList.add('hidden');
+                    console.error('Error: Firebase no está listo para cargar datos.');
+                    return;
+                }
                 const currentUserId = window.getUserId();
                 const currentAppId = window.getAppId();
 
@@ -1250,6 +1282,11 @@
              * Descarga TODOS los datos de cambios de aceite de Híbridos, aplicando la lógica de "última entrada por número de tarea".
              */
             async function downloadAllCambiosAceiteHibridosData() {
+                if (!window.isFirebaseReady()) { // Check Firebase readiness
+                    console.error('Error: Firebase no está listo para descargar todos los datos.');
+                    window.showFormMessage('Error: Firebase no está listo para descargar.', 'error');
+                    return;
+                }
                 const currentUserId = window.getUserId();
                 const currentAppId = window.getAppId();
 
@@ -1382,14 +1419,16 @@
                 });
             }
         });
-
+    </script>
+    <script>
+        // Este script se encarga del registro del Service Worker
         if ('serviceWorker' in navigator) {
             const registerServiceWorker = () => {
                 console.log('Intentando registrar Service Worker...');
-                // IMPORTANTE: Si tu aplicación está en un subdirectorio de GitHub Pages (ej. https://usuario.github.io/nombre-repo/),
-                // debes ajustar la ruta del Service Worker para incluir ese subdirectorio.
-                // Por ejemplo: navigator.serviceWorker.register('/nombre-repo/service-worker.js')
-                navigator.serviceWorker.register('./service-worker.js')
+                // Usamos una ruta absoluta para el Service Worker para evitar problemas con URL blob:
+                // Asegúrate de que '/GEE/' sea el subdirectorio correcto de tu repositorio en GitHub Pages.
+                const serviceWorkerUrl = window.location.origin + '/GEE/service-worker.js'; 
+                navigator.serviceWorker.register(serviceWorkerUrl)
                     .then((registration) => {
                         console.log('Service Worker registrado con éxito:', registration.scope);
                     })
@@ -1398,20 +1437,8 @@
                     });
             };
 
-            if (navigator.serviceWorker.ready) {
-                navigator.serviceWorker.ready.then(() => {
-                    registerServiceWorker();
-                }).catch(error => {
-                    console.error('Error al esperar Service Worker ready:', error);
-                    window.addEventListener('load', () => {
-                        setTimeout(registerServiceWorker, 500);
-                    });
-                });
-            } else {
-                window.addEventListener('load', () => {
-                    setTimeout(registerServiceWorker, 500);
-                });
-            }
+            // Intentar registrar el Service Worker cuando la página haya cargado completamente
+            window.addEventListener('load', registerServiceWorker);
         }
     </script>
 </body>
