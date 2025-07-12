@@ -1,13 +1,12 @@
 // service-worker.js
-const CACHE_NAME = 'gee-app-v1';
+const CACHE_NAME = 'fuel-converter-v1';
 const urlsToCache = [
-  // ¡CORREGIDO! Ahora usa 'GEE' que es el nombre REAL de tu repositorio.
-  '/GEE/', // La raíz de tu aplicación en GitHub Pages
+  '/GEE/', // La raíz de tu aplicación ahora será /GEE/
   '/GEE/index.html',
   '/GEE/manifest.json',
   '/GEE/service-worker.js',
   'https://cdn.tailwindcss.com', // Cacha también Tailwind CSS
-  // ¡CORREGIDO! Ahora usa 'GEE' para las rutas de los iconos.
+  // Agrega aquí todas las rutas a tus iconos
   '/GEE/icons/icon-192x192.png',
   '/GEE/icons/icon-512x512.png'
 ];
@@ -41,6 +40,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+                // Elimina cachés antiguas que no están en la lista blanca
             return caches.delete(cacheName);
           }
         })
