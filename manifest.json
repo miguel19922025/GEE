@@ -1,22 +1,19 @@
 {
-  "name": "GEE Manager",
-  "short_name": "GEE App",
-  "description": "Aplicación para la gestión de datos de GEE.",
-  // IMPORTANTE: Reemplaza YOUR_GITHUB_REPO_NAME con el nombre de tu repositorio de GitHub (ej. GEE-App)
-  "start_url": "/YOUR_GITHUB_REPO_NAME/index.html",
+  "name": "Convertidor Cm a Galones",
+  "short_name": "Cm a Glns",
+  "description": "Aplicación para convertir centímetros a galones de combustible.",
+  "start_url": "/GEE-App/index.html",
   "display": "standalone",
   "background_color": "#f0f4f8",
   "theme_color": "#4a5568",
   "icons": [
     {
-      // IMPORTANTE: Reemplaza YOUR_GITHUB_REPO_NAME con el nombre de tu repositorio de GitHub
-      "src": "/YOUR_GITHUB_REPO_NAME/icons/gee-icon-192x192.png",
+      "src": "/GEE-App/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      // IMPORTANTE: Reemplaza YOUR_GITHUB_REPO_NAME con el nombre de tu repositorio de GitHub
-      "src": "/YOUR_GITHUB_REPO_NAME/icons/gee-icon-512x512.png",
+      "src": "/GEE-App/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
