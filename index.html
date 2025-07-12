@@ -277,6 +277,8 @@
             }
         });
 
+        // Exponer firebaseReadyPromise globalmente
+        window.firebaseReadyPromise = firebaseReadyPromise;
 
         window.db = db;
         window.auth = auth;
@@ -766,14 +768,17 @@
             console.log('EVENT: saveCambiosAceiteHibridosButton clicked.');
             
             // Esperar a que Firebase esté listo
-            await firebaseReadyPromise;
+            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
             const currentUserId = getUserId(); // Use the getter function
             const currentAppId = getAppId(); // Use the getter function
 
+            console.log('DEBUG: currentUserId:', currentUserId);
+            console.log('DEBUG: db object:', db);
+
             if (!currentUserId || currentUserId === 'anonymous' || !db) {
-                console.error('Error: Usuario no autenticado o Firebase no inicializado.');
-                showFormMessage('Error: Usuario no autenticado o Firebase no inicializado. Intenta recargar la página.', 'error');
+                console.error('Error: Usuario no autenticado o Firebase no inicializado. Asegúrate de que Firebase se haya configurado correctamente y que el usuario haya iniciado sesión.');
+                showFormMessage('Error: Usuario no autenticado o Firebase no inicializado. Intenta recargar la página o verifica la configuración de Firebase.', 'error');
                 return;
             }
 
@@ -781,6 +786,8 @@
             const numeroTarea = numeroTareaInput.value.trim();
             const fechaEjecucion = fechaEjecucionInput.value; // Fecha en formato YYYY-MM-DD
             const horometro = parseFloat(horometroInput.value);
+
+            console.log('DEBUG: Valores de entrada - Site:', site, 'Tarea:', numeroTarea, 'Fecha:', fechaEjecucion, 'Horómetro:', horometro);
 
             const data = {
                 site: site,
@@ -801,16 +808,23 @@
             };
 
             // Validar campos obligatorios
-            if (!data.site || !data.numeroTarea || !data.fechaEjecucion || isNaN(data.horometro)) {
-                console.warn('Advertencia: Por favor, completa todos los campos obligatorios (Site, Número de Tarea, Fecha de Ejecución, Horómetro).');
-                showFormMessage('Por favor, completa todos los campos obligatorios (Site, Número de Tarea, Fecha de Ejecución, Horómetro).', 'error');
+            let missingFields = [];
+            if (!data.site) missingFields.push('Site');
+            if (!data.numeroTarea) missingFields.push('Número de Tarea');
+            if (!data.fechaEjecucion) missingFields.push('Fecha de Ejecución');
+            if (isNaN(data.horometro)) missingFields.push('Horómetro');
+
+            if (missingFields.length > 0) {
+                const message = `Por favor, completa los siguientes campos obligatorios: ${missingFields.join(', ')}.`;
+                console.warn('Advertencia:', message);
+                showFormMessage(message, 'error');
                 return; // Detener la ejecución si la validación falla
             }
 
             const firestoreCollectionPath = `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`;
 
-            console.log('Attempting to add data to collection:', firestoreCollectionPath);
-            console.log('Data to be added:', data);
+            console.log('DEBUG: Intentando añadir datos a la colección:', firestoreCollectionPath);
+            console.log('DEBUG: Datos a añadir:', data);
 
             try {
                 // Usar addDoc para añadir un nuevo documento con un ID generado automáticamente
@@ -819,9 +833,9 @@
                 showFormMessage('Datos guardados con éxito.', 'success'); // Mostrar mensaje de éxito
             } catch (e) {
                 console.error("Error al añadir documento: ", e);
-                showFormMessage('Error al guardar los datos. Inténtalo de nuevo.', 'error'); // Mostrar mensaje de error
+                showFormMessage('Error al guardar los datos. Inténtalo de nuevo. Detalle: ' + e.message, 'error'); // Mostrar mensaje de error más detallado
             } finally {
-                console.log('FLOW: Entering finally block for save operation.');
+                console.log('FLOW: Entrando en el bloque finally para la operación de guardar.');
                 // Limpiar los campos después de guardar, independientemente del éxito o error
                 siteInput.value = '';
                 numeroTareaInput.value = '';
@@ -838,11 +852,11 @@
                 fajaCheckbox.checked = false;
                 bateriaCheckbox.checked = false;
 
-                console.log('FLOW: Initiating showView(mainView) after delay.');
+                console.log('FLOW: Iniciando showView(mainView) después de un retraso.');
                 // Añadir un pequeño retraso antes de cambiar la vista
                 setTimeout(() => {
                     showView(mainView); // Ensure this is called
-                    console.log('FLOW: showView(mainView) call completed after timeout.');
+                    console.log('FLOW: Llamada a showView(mainView) completada después del timeout.');
                 }, 100); // 100ms delay
             }
         });
@@ -912,7 +926,7 @@
          */
         async function saveConfig() {
             // Esperar a que Firebase esté listo
-            await firebaseReadyPromise;
+            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
             const currentUserId = getUserId();
             const currentAppId = getAppId();
@@ -941,7 +955,7 @@
          */
         async function loadConfig() {
             // Esperar a que Firebase esté listo
-            await firebaseReadyPromise;
+            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
             const currentUserId = getUserId();
             const currentAppId = getAppId();
@@ -1075,7 +1089,7 @@
             clearTimeout(warningTimeout); // Limpiar cualquier timeout de advertencia
 
             // Esperar a que Firebase esté listo
-            await firebaseReadyPromise;
+            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
             const currentUserId = getUserId(); // Use the getter function
             const currentAppId = getAppId(); // Use the getter function
@@ -1222,7 +1236,7 @@
          */
         async function downloadAllCambiosAceiteHibridosData() {
             // Esperar a que Firebase esté listo
-            await firebaseReadyPromise;
+            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
             const currentUserId = getUserId();
             const currentAppId = getAppId();
