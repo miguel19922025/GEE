@@ -238,33 +238,45 @@
         let auth;
         let userId = 'anonymous'; // Default to anonymous
 
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
+        // Promise para asegurar que Firebase esté listo antes de las operaciones
+        let firebaseReadyPromise = new Promise(resolve => {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
 
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    console.log('Firebase authenticated. User ID:', userId);
-                } else {
-                    console.log('No user signed in. Attempting anonymous sign-in.');
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log('Firebase authenticated. User ID:', userId);
+                        resolve(); // Resuelve la promesa cuando el usuario está autenticado
+                    } else {
+                        console.log('No user signed in. Attempting anonymous sign-in.');
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                            userId = auth.currentUser.uid;
+                            console.log('Anonymous sign-in successful. User ID:', userId);
+                            resolve(); // Resuelve la promesa después del inicio de sesión anónimo
+                        } catch (error) {
+                            console.error('Firebase authentication failed:', error);
+                            // Si la autenticación falla, aún resolvemos la promesa para no bloquear la aplicación,
+                            // pero las operaciones de Firebase que requieran autenticación fallarán.
+                            resolve();
                         }
-                        userId = auth.currentUser.uid;
-                        console.log('Anonymous sign-in successful. User ID:', userId);
-                    } catch (error) {
-                        console.error('Firebase authentication failed:', error);
                     }
-                }
-            });
-        } catch (error) {
-            console.error("Failed to initialize Firebase:", error);
-        }
+                });
+            } catch (error) {
+                console.error("Failed to initialize Firebase:", error);
+                // Si la inicialización de Firebase falla, resolvemos la promesa para no bloquear,
+                // pero las operaciones de Firebase no funcionarán.
+                resolve();
+            }
+        });
+
 
         window.db = db;
         window.auth = auth;
@@ -752,12 +764,16 @@
 
         saveCambiosAceiteHibridosButton.addEventListener('click', async () => {
             console.log('EVENT: saveCambiosAceiteHibridosButton clicked.');
+            
+            // Esperar a que Firebase esté listo
+            await firebaseReadyPromise;
+
             const currentUserId = getUserId(); // Use the getter function
             const currentAppId = getAppId(); // Use the getter function
 
-            if (!currentUserId || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !db) {
                 console.error('Error: Usuario no autenticado o Firebase no inicializado.');
-                showFormMessage('Error: Usuario no autenticado o Firebase no inicializado.', 'error');
+                showFormMessage('Error: Usuario no autenticado o Firebase no inicializado. Intenta recargar la página.', 'error');
                 return;
             }
 
@@ -895,10 +911,13 @@
          * Guarda la configuración actual de horas y frecuencia en Firestore.
          */
         async function saveConfig() {
+            // Esperar a que Firebase esté listo
+            await firebaseReadyPromise;
+
             const currentUserId = getUserId();
             const currentAppId = getAppId();
 
-            if (!currentUserId || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !db) {
                 console.error('Error: Usuario no autenticado o Firebase no inicializado para guardar configuración.');
                 return;
             }
@@ -921,10 +940,13 @@
          * Carga la configuración de horas y frecuencia desde Firestore.
          */
         async function loadConfig() {
+            // Esperar a que Firebase esté listo
+            await firebaseReadyPromise;
+
             const currentUserId = getUserId();
             const currentAppId = getAppId();
 
-            if (!currentUserId || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !db) {
                 console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar configuración.');
                 return;
             }
@@ -1052,10 +1074,13 @@
             editWarningMessage.classList.add('hidden'); // Ocultar advertencia al cargar nuevos datos
             clearTimeout(warningTimeout); // Limpiar cualquier timeout de advertencia
 
+            // Esperar a que Firebase esté listo
+            await firebaseReadyPromise;
+
             const currentUserId = getUserId(); // Use the getter function
             const currentAppId = getAppId(); // Use the getter function
 
-            if (!currentUserId || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !db) {
                 errorMessage.textContent = 'Error: Usuario no autenticado o Firebase no inicializado.';
                 errorMessage.classList.remove('hidden');
                 loadingMessage.classList.add('hidden');
@@ -1196,10 +1221,13 @@
          * Descarga TODOS los datos de cambios de aceite de Híbridos, aplicando la lógica de "última entrada por número de tarea".
          */
         async function downloadAllCambiosAceiteHibridosData() {
+            // Esperar a que Firebase esté listo
+            await firebaseReadyPromise;
+
             const currentUserId = getUserId();
             const currentAppId = getAppId();
 
-            if (!currentUserId || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !db) {
                 console.error('Error: Usuario no autenticado o Firebase no inicializado para descargar todos los datos.');
                 showFormMessage('Error: Usuario no autenticado o Firebase no inicializado para descargar.', 'error'); // Usar formMessageDisplay
                 return;
