@@ -595,11 +595,9 @@
                     authInstance = getAuth(app);
                     console.log('DEBUG: Firebase app, db, auth inicializados.');
 
-                    // Assign to window immediately after initialization
-                    window.db = dbInstance;
-                    window.auth = authInstance;
+                    window.db = dbInstance; // Assign here
+                    window.auth = authInstance; // Assign here
 
-                    // Resolve the promise ONLY after the initial auth state is determined
                     onAuthStateChanged(authInstance, async (user) => {
                         if (user) {
                             userId = user.uid;
@@ -607,31 +605,34 @@
                         } else {
                             console.log('DEBUG: Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
                             try {
+                                let userCredential;
                                 if (initialAuthToken) {
-                                    await signInWithCustomToken(authInstance, initialAuthToken);
+                                    userCredential = await signInWithCustomToken(authInstance, initialAuthToken);
                                 } else {
-                                    await signInAnonymously(authInstance);
+                                    userCredential = await signInAnonymously(authInstance);
                                 }
-                                userId = authInstance.currentUser.uid;
-                                console.log('DEBUG: ID de usuario después del inicio de sesión anónimo:', userId);
+                                userId = userCredential.user.uid; // Get UID directly from the result
+                                console.log('DEBUG: ID de usuario después del inicio de sesión anónimo/custom:', userId);
                             } catch (error) {
                                 console.error('ERROR: Fallo la autenticación de Firebase:', error);
                                 window.showFormMessage('Error de autenticación de Firebase. Verifica la consola.', 'error');
-                                // Even on auth error, we resolve the promise to unblock the app,
-                                // but userId will remain 'anonymous' or the error will be handled.
+                                userId = 'anonymous'; // Explicitly set to anonymous on failure
                             }
                         }
-                        // window.getUserId is already defined, its closure will capture the updated userId
                         resolve(); // Resolve the promise here
                     });
                 } catch (error) {
                     console.error("ERROR: Fallo al inicializar Firebase:", error);
                     window.showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
+                    window.db = null; // Explicitly set to null on error
+                    window.auth = null; // Explicitly set to null on error
                     resolve(); // Resolve even on initialization error to prevent infinite loading
                 }
             } else {
                 console.warn('ADVERTENCIA: Firebase no inicializado. No se encontró apiKey en firebaseConfig.');
                 window.showFormMessage('Advertencia: Firebase no configurado. Las funciones de guardado no funcionarán.', 'warning');
+                window.db = null; // Explicitly set to null if no config
+                window.auth = null; // Explicitly set to null if no config
                 resolve(); // Resolve if no config to allow app to proceed without Firebase features
             }
         });
@@ -1339,7 +1340,7 @@
                 backFromDisplayCambiosAceiteHibridosDataButton.addEventListener('click', () => {
                     if (dataDisplayTableContainer) dataDisplayTableContainer.innerHTML = '';
                     if (horasTrabajaDiaInput) horasTrabajaDiaInput.value = '6.8';
-                    if (frecuenciaCambioInput) frecuenciaCambioInput.value = '37';
+                    if (frecuenciaCambioInput) frecuenciaCambiaInput.value = '37';
                     if (ultimoCambioAceiteSummary) ultimoCambioAceiteSummary.textContent = 'N/A';
                     if (proximoCambioAceiteSummary) proximoCambioAceiteSummary.textContent = 'N/A';
                     if (horasDesdeUltimoCambioSummary) horasDesdeUltimoCambioSummary.textContent = 'N/A';
