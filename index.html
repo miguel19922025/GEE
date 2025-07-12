@@ -539,20 +539,6 @@
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let firebaseConfig = {};
-        // IMPORTANTE: Para despliegues fuera de Canvas (ej. GitHub Pages),
-        // DEBES reemplazar la siguiente línea con tu configuración REAL de Firebase.
-        // Puedes obtenerla desde la consola de Firebase de tu proyecto (Configuración del proyecto -> Tus aplicaciones -> Web).
-        // Ejemplo de cómo se vería tu configuración:
-        /*
-        firebaseConfig = {
-            apiKey: "TU_API_KEY_AQUI",
-            authDomain: "TU_AUTH_DOMAIN_AQUI",
-            projectId: "TU_PROJECT_ID_AQUI",
-            storageBucket: "TU_STORAGE_BUCKET_AQUI",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID_AQUI",
-            appId: "TU_APP_ID_AQUI"
-        };
-        */
         if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
             try {
                 firebaseConfig = JSON.parse(__firebase_config);
@@ -562,22 +548,14 @@
             }
         } else {
             console.warn('ADVERTENCIA: __firebase_config no está definido. Asegúrate de haber configurado firebaseConfig manualmente para despliegues fuera de Canvas.');
-            // Aquí deberías tener tu configuración manual si no estás en Canvas
-            // firebaseConfig = { ... tus credenciales ... };
         }
 
         let app;
-        let db;
-        let auth;
+        let dbInstance; // Renamed to avoid conflict with global window.db
+        let authInstance; // Renamed to avoid conflict with global window.auth
         let userId = 'anonymous'; // Default to anonymous
 
-        // Declaración y exposición global de showFormMessage y formMessageTimeout
         let formMessageTimeout;
-        /**
-         * Muestra un mensaje temporal en el área de mensajes del formulario.
-         * @param {string} message - El mensaje a mostrar.
-         * @param {'success'|'error'|'warning'} type - El tipo de mensaje para aplicar estilos.
-         */
         function showFormMessage(message, type) {
             const formMessageDisplay = document.getElementById('formMessageDisplay');
             if (!formMessageDisplay) {
@@ -601,63 +579,55 @@
                 formMessageDisplay.classList.add('hidden');
             }, 5000);
         }
-        window.showFormMessage = showFormMessage; // Exponer showFormMessage globalmente
+        window.showFormMessage = showFormMessage;
 
-        // Promise para asegurar que Firebase esté listo antes de las operaciones
         let firebaseReadyPromise = new Promise(resolve => {
-            // Solo intentar inicializar Firebase si firebaseConfig tiene apiKey
             if (firebaseConfig && firebaseConfig.apiKey) {
                 try {
                     app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
+                    dbInstance = getFirestore(app);
+                    authInstance = getAuth(app);
                     console.log('DEBUG: Firebase app, db, auth inicializados.');
 
-                    onAuthStateChanged(auth, async (user) => {
+                    onAuthStateChanged(authInstance, async (user) => {
                         if (user) {
                             userId = user.uid;
                             console.log('DEBUG: Firebase autenticado. ID de usuario:', userId);
-                            resolve(); // Resuelve la promesa cuando el usuario está autenticado
                         } else {
                             console.log('DEBUG: Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
                             try {
                                 if (initialAuthToken) {
-                                    await signInWithCustomToken(auth, initialAuthToken);
-                                    console.log('DEBUG: Inicio de sesión con token personalizado exitoso.');
+                                    await signInWithCustomToken(authInstance, initialAuthToken);
                                 } else {
-                                    await signInAnonymously(auth);
-                                    console.log('DEBUG: Inicio de sesión anónimo exitoso.');
+                                    await signInAnonymously(authInstance);
                                 }
-                                userId = auth.currentUser.uid;
+                                userId = authInstance.currentUser.uid;
                                 console.log('DEBUG: ID de usuario después del inicio de sesión:', userId);
-                                resolve(); // Resuelve la promesa después del inicio de sesión anónimo
                             } catch (error) {
                                 console.error('ERROR: Fallo la autenticación de Firebase:', error);
                                 window.showFormMessage('Error de autenticación de Firebase. Verifica la consola.', 'error');
-                                resolve(); // Aún resolvemos para no bloquear, pero las operaciones de Firebase podrían fallar.
                             }
                         }
+                        // ONLY after auth state is determined, expose them globally
+                        window.db = dbInstance;
+                        window.auth = authInstance;
+                        window.getUserId = () => userId;
+                        resolve();
                     });
                 } catch (error) {
                     console.error("ERROR: Fallo al inicializar Firebase:", error);
                     window.showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
-                    resolve(); // Si la inicialización falla, resolvemos la promesa para no bloquear.
+                    resolve();
                 }
             } else {
                 console.warn('ADVERTENCIA: Firebase no inicializado. No se encontró apiKey en firebaseConfig.');
                 window.showFormMessage('Advertencia: Firebase no configurado. Las funciones de guardado no funcionarán.', 'warning');
-                resolve(); // Resuelve inmediatamente si no hay configuración para Firebase
+                resolve();
             }
         });
 
-        // Exponer firebaseReadyPromise y firebaseConfig globalmente
         window.firebaseReadyPromise = firebaseReadyPromise;
-        window.firebaseConfig = firebaseConfig; // <-- Añadido para exponer firebaseConfig
-
-        window.db = db;
-        window.auth = auth;
-        window.getUserId = () => userId;
-        window.getAppId = () => appId;
+        window.firebaseConfig = firebaseConfig;
         window.collection = collection;
         window.addDoc = addDoc;
         window.query = query;
@@ -666,510 +636,560 @@
         window.doc = doc;
         window.setDoc = setDoc;
         window.getDoc = getDoc;
-        window.getDocs = getDocs; // Expose getDocs globally
+        window.getDocs = getDocs;
 
-        // Obtener referencias a las vistas
-        const mainView = document.getElementById('mainView');
-        const addDataView = document.getElementById('addDataView');
-        const cambiosAceiteHibridosView = document.getElementById('cambiosAceiteHibridosView');
-        const reviewDataView = document.getElementById('reviewDataView');
-        const selectSiteReviewHibridosView = document.getElementById('selectSiteReviewHibridosView');
-        const displayCambiosAceiteHibridosDataView = document.getElementById('displayCambiosAceiteHibridosDataView'); // Nueva vista de display
+        // Asegurarse de que el DOM esté completamente cargado antes de acceder a los elementos
+        document.addEventListener('DOMContentLoaded', function() {
+            const mainView = document.getElementById('mainView');
+            const addDataView = document.getElementById('addDataView');
+            const cambiosAceiteHibridosView = document.getElementById('cambiosAceiteHibridosView');
+            const reviewDataView = document.getElementById('reviewDataView');
+            const selectSiteReviewHibridosView = document.getElementById('selectSiteReviewHibridosView');
+            const displayCambiosAceiteHibridosDataView = document.getElementById('displayCambiosAceiteHibridosDataView');
 
-        // Obtener referencias a los botones principales
-        const addDataButton = document.getElementById('addDataButton');
-        const reviewDataButton = document.getElementById('reviewDataButton');
+            const addDataButton = document.getElementById('addDataButton');
+            const reviewDataButton = document.getElementById('reviewDataButton');
 
-        // Obtener referencias a los botones de la vista "Agregar datos"
-        const faenasSimplesButton = document.getElementById('faenasSimplesButton');
-        const faenasHibridosButton = document.getElementById('faenasHibridosButton');
-        const cambiosAceiteHibridosButton = document.getElementById('cambiosAceiteHibridosButton');
-        const cambiosAceiteSimplesButton = document.getElementById('cambiosAceiteSimplesButton');
-        const backToMainButton = document.getElementById('backToMainButton');
+            const faenasSimplesButton = document.getElementById('faenasSimplesButton');
+            const faenasHibridosButton = document.getElementById('faenasHibridosButton');
+            const cambiosAceiteHibridosButton = document.getElementById('cambiosAceiteHibridosButton');
+            const cambiosAceiteSimplesButton = document.getElementById('cambiosAceiteSimplesButton');
+            const backToMainButton = document.getElementById('backToMainButton');
 
-        // Obtener referencias a los botones de la vista "Cambios de Aceite GEE Hibridos"
-        const saveCambiosAceiteHibridosButton = document.getElementById('saveCambiosAceiteHibridosButton');
-        const backFromCambiosAceiteHibridosButton = document.getElementById('backFromCambiosAceiteHibridosButton');
+            const saveCambiosAceiteHibridosButton = document.getElementById('saveCambiosAceiteHibridosButton');
+            const backFromCambiosAceiteHibridosButton = document.getElementById('backFromCambiosAceiteHibridosButton');
 
-        // Obtener referencias a los botones de la vista "Revisar Data"
-        const reviewFiltrosAceiteHibridosButton = document.getElementById('reviewFiltrosAceiteHibridosButton');
-        const reviewAceiteSimplesButton = document.getElementById('reviewAceiteSimplesButton');
-        const reviewFaenasSimplesButton = document.getElementById('reviewFaenasSimplesButton');
-        const reviewFaenasHibridosButton = document.getElementById('reviewFaenasHibridosButton');
-        const backFromReviewDataButton = document.getElementById('backFromReviewDataButton');
+            const reviewFiltrosAceiteHibridosButton = document.getElementById('reviewFiltrosAceiteHibridosButton');
+            const reviewAceiteSimplesButton = document.getElementById('reviewAceiteSimplesButton');
+            const reviewFaenasSimplesButton = document.getElementById('reviewFaenasSimplesButton');
+            const reviewFaenasHibridosButton = document.getElementById('reviewFaenasHibridosButton');
+            const backFromReviewDataButton = document.getElementById('backFromReviewDataButton');
 
-        // Obtener referencias a los botones de la nueva vista "Elegir Site para Revisar Filtros y Aceite Híbridos"
-        const confirmSiteReviewButton = document.getElementById('confirmSiteReviewButton');
-        const backFromSelectSiteReviewHibridosButton = document.getElementById('backFromSelectSiteReviewHibridosButton');
-        const siteReviewInput = document.getElementById('siteReviewInput');
-        const downloadAllHibridosDataButton = document.getElementById('downloadAllHibridosDataButton'); // Nuevo: Botón de descarga global
+            const confirmSiteReviewButton = document.getElementById('confirmSiteReviewButton');
+            const backFromSelectSiteReviewHibridosButton = document.getElementById('backFromSelectSiteReviewHibridosButton');
+            const siteReviewInput = document.getElementById('siteReviewInput');
+            const downloadAllHibridosDataButton = document.getElementById('downloadAllHibridosDataButton');
 
-        // Obtener referencias a los elementos de la vista de display de datos
-        const currentSiteDisplay = document.getElementById('currentSiteDisplay');
-        const dataDisplayTableContainer = document.getElementById('dataDisplayTableContainer');
-        const loadingMessage = document.getElementById('loadingMessage');
-        const errorMessage = document.getElementById('errorMessage');
-        const noDataMessage = document.getElementById('noDataMessage');
-        const backFromDisplayCambiosAceiteHibridosDataButton = document.getElementById('backFromDisplayCambiosAceiteHibridosDataButton');
+            const currentSiteDisplay = document.getElementById('currentSiteDisplay');
+            const dataDisplayTableContainer = document.getElementById('dataDisplayTableContainer');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const noDataMessage = document.getElementById('noDataMessage');
+            const backFromDisplayCambiosAceiteHibridosDataButton = document.getElementById('backFromDisplayCambiosAceiteHibridosDataButton');
 
-        // Referencias a los elementos del cuadro de resumen (SPANs y ahora INPUTs)
-        const horasTrabajaDiaInput = document.getElementById('horasTrabajaDiaInput'); // Ahora es un input
-        const ultimoCambioAceiteSummary = document.getElementById('ultimoCambioAceiteSummary');
-        const proximoCambioAceiteSummary = document.getElementById('proximoCambioAceiteSummary');
-        const frecuenciaCambioInput = document.getElementById('frecuenciaCambioInput'); // Ahora es un input
-        const horasDesdeUltimoCambioSummary = document.getElementById('horasDesdeUltimoCambioSummary');
-        const proximoCambioAceiteSummaryItem = document.getElementById('proximoCambioAceiteSummaryItem');
+            const horasTrabajaDiaInput = document.getElementById('horasTrabajaDiaInput');
+            const ultimoCambioAceiteSummary = document.getElementById('ultimoCambioAceiteSummary');
+            const proximoCambioAceiteSummary = document.getElementById('proximoCambioAceiteSummary');
+            const frecuenciaCambioInput = document.getElementById('frecuenciaCambioInput');
+            const horasDesdeUltimoCambioSummary = document.getElementById('horasDesdeUltimoCambioSummary');
+            const proximoCambioAceiteSummaryItem = document.getElementById('proximoCambioAceiteSummaryItem');
 
-        // Referencia al mensaje de advertencia
-        const editWarningMessage = document.getElementById('editWarningMessage');
+            const editWarningMessage = document.getElementById('editWarningMessage');
 
-        // Obtener referencias a los campos de entrada y checkboxes (vista de Cambios de Aceite Hibridos)
-        const siteInput = document.getElementById('siteInput');
-        const numeroTareaInput = document.getElementById('numeroTareaInput');
-        const fechaEjecucionInput = document.getElementById('fechaEjecucionInput');
-        const horometroInput = document.getElementById('horometroInput');
-        const aceiteCheckbox = document.getElementById('aceiteCheckbox');
-        const filtroAceiteCheckbox = document.getElementById('filtroAceiteCheckbox');
-        const filtroPetroleo1Checkbox = document.getElementById('filtroPetroleo1Checkbox');
-        const filtroPetroleo2Checkbox = document.getElementById('filtroPetroleo2Checkbox');
-        const filtroAireCheckbox = document.getElementById('filtroAireCheckbox');
-        const filtroTanqueCheckbox = document.getElementById('filtroTanqueCheckbox');
-        const filtroGasesCheckbox = document.getElementById('filtroGasesCheckbox');
-        const refrigeranteCheckbox = document.getElementById('refrigeranteCheckbox');
-        const fajaCheckbox = document.getElementById('fajaCheckbox');
-        const bateriaCheckbox = document.getElementById('bateriaCheckbox');
+            const siteInput = document.getElementById('siteInput');
+            const numeroTareaInput = document.getElementById('numeroTareaInput');
+            const fechaEjecucionInput = document.getElementById('fechaEjecucionInput');
+            const horometroInput = document.getElementById('horometroInput');
+            const aceiteCheckbox = document.getElementById('aceiteCheckbox');
+            const filtroAceiteCheckbox = document.getElementById('filtroAceiteCheckbox');
+            const filtroPetroleo1Checkbox = document.getElementById('filtroPetroleo1Checkbox');
+            const filtroPetroleo2Checkbox = document.getElementById('filtroPetroleo2Checkbox');
+            const filtroAireCheckbox = document.getElementById('filtroAireCheckbox');
+            const filtroTanqueCheckbox = document.getElementById('filtroTanqueCheckbox');
+            const filtroGasesCheckbox = document.getElementById('filtroGasesCheckbox');
+            const refrigeranteCheckbox = document.getElementById('refrigeranteCheckbox');
+            const fajaCheckbox = document.getElementById('fajaCheckbox');
+            const bateriaCheckbox = document.getElementById('bateriaCheckbox');
 
 
-        // --- Funciones de Navegación ---
-        function showView(viewToShow) {
-            console.log('VIEW_CONTROL: showView called for:', viewToShow.id);
-            const allViews = [mainView, addDataView, cambiosAceiteHibridosView, reviewDataView, selectSiteReviewHibridosView, displayCambiosAceiteHibridosDataView];
-            allViews.forEach(view => {
-                view.classList.add('hidden');
-                view.classList.remove('animated-view'); // Eliminar animación al ocultar
-                console.log(`VIEW_CONTROL: Hiding: ${view.id}. Current classes: ${view.classList.value}`);
+            function showView(viewToShow) {
+                console.log('VIEW_CONTROL: showView called for:', viewToShow.id);
+                const allViews = [mainView, addDataView, cambiosAceiteHibridosView, reviewDataView, selectSiteReviewHibridosView, displayCambiosAceiteHibridosDataView];
+                allViews.forEach(view => {
+                    view.classList.add('hidden');
+                    view.classList.remove('animated-view');
+                    console.log(`VIEW_CONTROL: Hiding: ${view.id}. Current classes: ${view.classList.value}`);
+                });
+                viewToShow.classList.remove('hidden');
+                viewToShow.classList.add('animated-view');
+                console.log(`VIEW_CONTROL: Showing: ${viewToShow.id}. Current classes: ${viewToShow.classList.value}`);
+            }
+
+            addDataButton.addEventListener('click', () => showView(addDataView));
+            reviewDataButton.addEventListener('click', () => showView(reviewDataView));
+
+            backToMainButton.addEventListener('click', () => showView(mainView));
+            faenasSimplesButton.addEventListener('click', () => console.log('Clic en "Faenas de GEE simples" (sin acción visible)'));
+            faenasHibridosButton.addEventListener('click', () => console.log('Clic en "Faena GEE Hibridos" (sin acción visible)'));
+            cambiosAceiteSimplesButton.addEventListener('click', () => console.log('Clic en "Cambios de aceite GEE simples" (sin acción visible)'));
+
+            cambiosAceiteHibridosButton.addEventListener('click', () => {
+                showView(cambiosAceiteHibridosView);
+                window.showFormMessage('', '');
             });
-            viewToShow.classList.remove('hidden');
-            viewToShow.classList.add('animated-view'); // Añadir animación al mostrar
-            console.log(`VIEW_CONTROL: Showing: ${viewToShow.id}. Current classes: ${viewToShow.classList.value}`);
-        }
 
-        // --- Lógica de Eventos ---
+            backFromCambiosAceiteHibridosButton.addEventListener('click', () => showView(addDataView));
 
-        // Botones de la vista principal
-        addDataButton.addEventListener('click', () => showView(addDataView));
-        reviewDataButton.addEventListener('click', () => showView(reviewDataView));
-
-        // Botones de la vista "Agregar datos"
-        backToMainButton.addEventListener('click', () => showView(mainView));
-        // Los siguientes botones ahora solo registran un mensaje en la consola, sin abrir nada.
-        faenasSimplesButton.addEventListener('click', () => console.log('Clic en "Faenas de GEE simples" (sin acción visible)'));
-        faenasHibridosButton.addEventListener('click', () => console.log('Clic en "Faena GEE Hibridos" (sin acción visible)'));
-        cambiosAceiteSimplesButton.addEventListener('click', () => console.log('Clic en "Cambios de aceite GEE simples" (sin acción visible)'));
-
-        // Mostrar vista de "Cambios de Aceite GEE Hibridos"
-        cambiosAceiteHibridosButton.addEventListener('click', () => {
-            showView(cambiosAceiteHibridosView);
-            window.showFormMessage('', ''); // Ocultar cualquier mensaje anterior al entrar a la vista
-        });
-
-        // Botones de la vista "Cambios de Aceite GEE Hibridos"
-        backFromCambiosAceiteHibridosButton.addEventListener('click', () => showView(addDataView));
-
-        saveCambiosAceiteHibridosButton.addEventListener('click', async () => {
-            console.log('EVENT: saveCambiosAceiteHibridosButton clicked.');
-            
-            // Esperar a que Firebase esté listo
-            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
-
-            // Acceder directamente a las variables globales de Firebase
-            const currentDb = window.db;
-            const currentAuth = window.auth;
-            const currentUserId = window.getUserId(); // Use the getter function
-            const currentAppId = window.getAppId(); // Use the getter function
-
-            console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
-            console.log('DEBUG: objeto db después de firebaseReadyPromise:', currentDb);
-            console.log('DEBUG: currentAuth.currentUser después de firebaseReadyPromise:', currentAuth ? currentAuth.currentUser : 'undefined (currentAuth is null)');
-            console.log('DEBUG: firebaseConfig utilizado:', window.firebaseConfig); // Acceder a través de window
-
-            // Robust check for Firebase initialization
-            if (!currentUserId || currentUserId === 'anonymous' || !currentDb || !currentAuth || !currentAuth.currentUser) {
-                console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado. currentUserId:', currentUserId, 'db:', currentDb, 'auth.currentUser:', currentAuth ? currentAuth.currentUser : 'undefined');
-                window.showFormMessage('Error: No se pudo guardar. Firebase no está listo o el usuario no está autenticado. Verifica la consola para más detalles.', 'error');
-                return;
-            }
-
-            const site = siteInput.value.trim();
-            const numeroTarea = numeroTareaInput.value.trim();
-            const fechaEjecucion = fechaEjecucionInput.value; // Fecha en formato YYYY-MM-DD
-            const horometro = parseFloat(horometroInput.value);
-
-            console.log('DEBUG: Valores de entrada - Site:', site, 'Tarea:', numeroTarea, 'Fecha:', fechaEjecucion, 'Horómetro:', horometro);
-
-            const data = {
-                site: site,
-                numeroTarea: numeroTarea,
-                fechaEjecucion: fechaEjecucion,
-                horometro: horometro,
-                aceite: aceiteCheckbox.checked,
-                filtroAceite: filtroAceiteCheckbox.checked,
-                filtroPetroleo1: filtroPetroleo1Checkbox.checked,
-                filtroPetroleo2: filtroPetroleo2Checkbox.checked,
-                filtroAire: filtroAireCheckbox.checked,
-                filtroTanque: filtroTanqueCheckbox.checked,
-                filtroGases: filtroGasesCheckbox.checked,
-                refrigerante: refrigeranteCheckbox.checked,
-                faja: fajaCheckbox.checked,
-                bateria: bateriaCheckbox.checked,
-                timestamp: new Date().toISOString() // Añadir marca de tiempo ISO para ordenar y evitar problemas de zona horaria
-            };
-
-            // Validar campos obligatorios
-            let missingFields = [];
-            if (!data.site) missingFields.push('Site');
-            if (!data.numeroTarea) missingFields.push('Número de Tarea');
-            if (!data.fechaEjecucion) missingFields.push('Fecha de Ejecución');
-            if (isNaN(data.horometro)) missingFields.push('Horómetro');
-
-            if (missingFields.length > 0) {
-                const message = `Por favor, completa los siguientes campos obligatorios: ${missingFields.join(', ')}.`;
-                console.warn('Advertencia:', message);
-                window.showFormMessage(message, 'error');
-                return; // Detener la ejecución si la validación falla
-            }
-
-            const firestoreCollectionPath = `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`;
-
-            console.log('DEBUG: Intentando añadir datos a la colección:', firestoreCollectionPath);
-            console.log('DEBUG: Datos a añadir:', data);
-
-            try {
-                // Usar addDoc para añadir un nuevo documento con un ID generado automáticamente
-                const docRef = await addDoc(collection(currentDb, firestoreCollectionPath), data); // Use currentDb
-                console.log('DEBUG: Datos de Cambios de Aceite GEE Hibridos guardados con éxito. ID:', docRef.id);
-                window.showFormMessage('Datos guardados con éxito.', 'success'); // Mostrar mensaje de éxito
-            } catch (e) {
-                console.error("Error al añadir documento: ", e);
-                window.showFormMessage('Error al guardar los datos. Inténtalo de nuevo. Detalle: ' + e.message, 'error'); // Mostrar mensaje de error más detallado
-            } finally {
-                console.log('FLOW: Entrando en el bloque finally para la operación de guardar.');
-                // Limpiar los campos después de guardar, independientemente del éxito o error
-                siteInput.value = '';
-                numeroTareaInput.value = '';
-                fechaEjecucionInput.value = '';
-                horometroInput.value = '';
-                aceiteCheckbox.checked = false;
-                filtroAceiteCheckbox.checked = false;
-                filtroPetroleo1Checkbox.checked = false;
-                filtroPetroleo2Checkbox.checked = false;
-                filtroAireCheckbox.checked = false;
-                filtroTanqueCheckbox.checked = false;
-                filtroGasesCheckbox.checked = false;
-                refrigeranteCheckbox.checked = false;
-                fajaCheckbox.checked = false;
-                bateriaCheckbox.checked = false;
-
-                console.log('FLOW: Iniciando showView(mainView) después de un retraso.');
-                // Añadir un pequeño retraso antes de cambiar la vista
-                setTimeout(() => {
-                    showView(mainView); // Ensure this is called
-                    console.log('FLOW: Llamada a showView(mainView) completada después del timeout.');
-                }, 100); // 100ms delay
-            }
-        });
-
-
-        // Botones de la vista "Revisar Data"
-        backFromReviewDataButton.addEventListener('click', () => showView(mainView));
-
-        // Mostrar vista de "Elija el site a revisar"
-        reviewFiltrosAceiteHibridosButton.addEventListener('click', () => showView(selectSiteReviewHibridosView));
-
-        // Botones de la vista "Elija el site a revisar"
-        backFromSelectSiteReviewHibridosButton.addEventListener('click', () => showView(reviewDataView));
-
-        confirmSiteReviewButton.addEventListener('click', async () => { // Made async to await loadConfig
-            const selectedSite = siteReviewInput.value.trim();
-            if (!selectedSite) {
-                console.warn('Advertencia: Por favor, selecciona un Site para revisar.');
-                window.showFormMessage('Por favor, selecciona un Site para revisar.', 'error');
-                return;
-            }
-            currentSiteDisplay.textContent = `Site: ${selectedSite}`;
-            showView(displayCambiosAceiteHibridosDataView);
-            await loadConfig(); // Load configuration before loading data
-            loadCambiosAceiteHibridosData(selectedSite); // Cargar datos para el site seleccionado
-        });
-
-        // Botones de la vista "Mostrar Datos de Cambios de Aceite GEE Hibridos"
-        backFromDisplayCambiosAceiteHibridosDataButton.addEventListener('click', () => {
-            // Limpiar la tabla y mensajes al volver
-            dataDisplayTableContainer.innerHTML = '';
-            // Restablecer los valores del resumen y los inputs a sus valores por defecto
-            horasTrabajaDiaInput.value = '6.8';
-            frecuenciaCambioInput.value = '37';
-            ultimoCambioAceiteSummary.textContent = 'N/A';
-            proximoCambioAceiteSummary.textContent = 'N/A';
-            horasDesdeUltimoCambioSummary.textContent = 'N/A';
-            
-            // Asegurarse de quitar la clase overdue si se vuelve a esta vista
-            proximoCambioAceiteSummaryItem.classList.remove('overdue');
-            document.body.classList.remove('overdue-page-background'); // Quitar la clase del body
-            editWarningMessage.classList.add('hidden'); // Ocultar advertencia
-            clearTimeout(warningTimeout); // Limpiar cualquier timeout de advertencia
-
-            showView(selectSiteReviewHibridosView);
-        });
-
-        // --- Funciones de Carga y Visualización de Datos ---
-        let unsubscribe = null; // Para almacenar la función de desuscripción de onSnapshot
-        let currentTableData = []; // Almacenar los datos actuales de la tabla para la descarga del site específico
-        let warningTimeout; // Variable para el timeout del mensaje de advertencia
-
-        /**
-         * Muestra un mensaje de advertencia temporal cuando se editan los campos del resumen.
-         */
-        function showEditWarning() {
-            editWarningMessage.textContent = 'Cuidado los cambios podrían afectar los cálculos al mantenimiento.';
-            editWarningMessage.classList.remove('hidden');
-            clearTimeout(warningTimeout); // Limpiar cualquier timeout existente
-            warningTimeout = setTimeout(() => {
-                editWarningMessage.classList.add('hidden');
-            }, 5000); // Ocultar después de 5 segundos
-        }
-
-        /**
-         * Guarda la configuración actual de horas y frecuencia en Firestore.
-         */
-        async function saveConfig() {
-            // Esperar a que Firebase esté listo
-            await window.firebaseReadyPromise;
-
-            const currentDb = window.db; // Access from window
-            const currentUserId = window.getUserId();
-            const currentAppId = window.getAppId();
-
-            if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
-                console.error('Error: Usuario no autenticado o Firebase no inicializado para guardar configuración.');
-                return;
-            }
-
-            const configData = {
-                horasTrabajaDia: parseFloat(horasTrabajaDiaInput.value),
-                frecuenciaCambio: parseInt(frecuenciaCambioInput.value)
-            };
-
-            try {
-                const configDocRef = doc(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/config`, 'summaryConfig');
-                await setDoc(configDocRef, configData, { merge: true });
-                console.log('Configuración guardada con éxito.');
-            } catch (e) {
-                console.error('Error al guardar configuración:', e);
-            }
-        }
-
-        /**
-         * Carga la configuración de horas y frecuencia desde Firestore.
-         */
-        async function loadConfig() {
-            // Esperar a que Firebase esté listo
-            await window.firebaseReadyPromise;
-
-            const currentDb = window.db; // Access from window
-            const currentUserId = window.getUserId();
-            const currentAppId = window.getAppId();
-
-            if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
-                console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar configuración.');
-                return;
-            }
-
-            try {
-                const configDocRef = doc(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/config`, 'summaryConfig');
-                const configDocSnap = await getDoc(configDocRef);
-
-                if (configDocSnap.exists()) {
-                    const configData = configDocSnap.data();
-                    if (configData.horasTrabajaDia !== undefined) {
-                        horasTrabajaDiaInput.value = configData.horasTrabajaDia.toFixed(1);
-                    }
-                    if (configData.frecuenciaCambio !== undefined) {
-                        frecuenciaCambioInput.value = configData.frecuenciaCambio;
-                    }
-                    console.log('Configuración cargada con éxito:', configData);
-                } else {
-                    console.log('No se encontró configuración guardada. Usando valores predeterminados.');
-                    horasTrabajaDiaInput.value = '6.8';
-                    frecuenciaCambioInput.value = '37';
-                }
-            } catch (e) {
-                console.error('Error al cargar configuración:', e);
-                // Fallback to default values if loading fails
-                horasTrabajaDiaInput.value = '6.8';
-                frecuenciaCambioInput.value = '37';
-            }
-        }
-
-
-        /**
-         * Actualiza los cálculos del cuadro de resumen basándose en los valores actuales de los campos de entrada.
-         */
-        function updateSummaryCalculations() {
-            const horasTrabajaPorDia = parseFloat(horasTrabajaDiaInput.value);
-            const fixedFrecuenciaCambio = parseInt(frecuenciaCambioInput.value);
-
-            // Recalcular 'Próximo cambio de aceite' y 'Horas transcurridas'
-            const latestData = currentTableData.length > 0 ? currentTableData[0] : null;
-
-            if (latestData && latestData.fechaEjecucion) {
-                const latestDate = new Date(latestData.fechaEjecucion + 'T00:00:00');
-                const formattedLatestDate = latestDate.toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                });
-                ultimoCambioAceiteSummary.textContent = formattedLatestDate;
-
-                // Frecuencia del cambio (siempre leída del input)
-                frecuenciaCambioInput.value = isNaN(fixedFrecuenciaCambio) ? '37' : fixedFrecuenciaCambio; // Asegura que el input tenga un valor numérico
+            saveCambiosAceiteHibridosButton.addEventListener('click', async () => {
+                console.log('EVENT: saveCambiosAceiteHibridosButton clicked.');
                 
-                // Próximo cambio de aceite
-                const nextChangeDate = new Date(latestDate);
-                if (!isNaN(fixedFrecuenciaCambio)) {
-                    nextChangeDate.setDate(latestDate.getDate() + fixedFrecuenciaCambio);
-                }
-                const formattedNextChangeDate = nextChangeDate.toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                });
-                proximoCambioAceiteSummary.textContent = formattedNextChangeDate;
+                await window.firebaseReadyPromise;
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                nextChangeDate.setHours(0, 0, 0, 0);
+                const currentDb = window.db;
+                const currentAuth = window.auth;
+                const currentUserId = window.getUserId();
+                const currentAppId = window.getAppId();
 
-                if (nextChangeDate < today) {
-                    proximoCambioAceiteSummaryItem.classList.add('overdue');
-                    document.body.classList.add('overdue-page-background');
-                } else {
-                    proximoCambioAceiteSummaryItem.classList.remove('overdue');
-                    document.body.classList.remove('overdue-page-background');
+                console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
+                console.log('DEBUG: objeto db después de firebaseReadyPromise:', currentDb);
+                console.log('DEBUG: currentAuth.currentUser después de firebaseReadyPromise:', currentAuth ? currentAuth.currentUser : 'undefined (currentAuth is null)');
+                console.log('DEBUG: firebaseConfig utilizado:', window.firebaseConfig);
+
+                if (!currentUserId || currentUserId === 'anonymous' || !currentDb || !currentAuth || !currentAuth.currentUser) {
+                    console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado. currentUserId:', currentUserId, 'db:', currentDb, 'auth.currentUser:', currentAuth ? currentAuth.currentUser : 'undefined');
+                    window.showFormMessage('Error: No se pudo guardar. Firebase no está listo o el usuario no está autenticado. Verifica la consola para más detalles.', 'error');
+                    return;
                 }
 
-                // Horas que trabaja por día (siempre leída del input)
-                horasTrabajaDiaInput.value = isNaN(horasTrabajaPorDia) ? '6.8' : horasTrabajaPorDia.toFixed(1); // Asegura que el input tenga un valor numérico
+                const site = siteInput.value.trim();
+                const numeroTarea = numeroTareaInput.value.trim();
+                const fechaEjecucion = fechaEjecucionInput.value;
+                const horometro = parseFloat(horometroInput.value);
 
-                // Horas transcurridas desde el último cambio
-                if (!isNaN(horasTrabajaPorDia)) {
-                    const diffTime = Math.abs(today.getTime() - latestDate.getTime());
-                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                    const horasTranscurridas = diffDays * horasTrabajaPorDia;
-                    horasDesdeUltimoCambioSummary.textContent = `${horasTranscurridas.toFixed(1)} horas`;
-                } else {
-                    horasDesdeUltimoCambioSummary.textContent = 'N/A';
+                console.log('DEBUG: Valores de entrada - Site:', site, 'Tarea:', numeroTarea, 'Fecha:', fechaEjecucion, 'Horómetro:', horometro);
+
+                const data = {
+                    site: site,
+                    numeroTarea: numeroTarea,
+                    fechaEjecucion: fechaEjecucion,
+                    horometro: horometro,
+                    aceite: aceiteCheckbox.checked,
+                    filtroAceite: filtroAceiteCheckbox.checked,
+                    filtroPetroleo1: filtroPetroleo1Checkbox.checked,
+                    filtroPetroleo2: filtroPetroleo2Checkbox.checked,
+                    filtroAire: filtroAireCheckbox.checked,
+                    filtroTanque: filtroTanqueCheckbox.checked,
+                    filtroGases: filtroGasesCheckbox.checked,
+                    refrigerante: refrigeranteCheckbox.checked,
+                    faja: fajaCheckbox.checked,
+                    bateria: bateriaCheckbox.checked,
+                    timestamp: new Date().toISOString()
+                };
+
+                let missingFields = [];
+                if (!data.site) missingFields.push('Site');
+                if (!data.numeroTarea) missingFields.push('Número de Tarea');
+                if (!data.fechaEjecucion) missingFields.push('Fecha de Ejecución');
+                if (isNaN(data.horometro)) missingFields.push('Horómetro');
+
+                if (missingFields.length > 0) {
+                    const message = `Por favor, completa los siguientes campos obligatorios: ${missingFields.join(', ')}.`;
+                    console.warn('Advertencia:', message);
+                    window.showFormMessage(message, 'error');
+                    return;
                 }
-            } else {
-                // Si no hay documentos, resetear todo el resumen a N/A y los inputs a sus valores por defecto
+
+                const firestoreCollectionPath = `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`;
+
+                console.log('DEBUG: Intentando añadir datos a la colección:', firestoreCollectionPath);
+                console.log('DEBUG: Datos a añadir:', data);
+
+                try {
+                    const docRef = await addDoc(collection(currentDb, firestoreCollectionPath), data);
+                    console.log('DEBUG: Datos de Cambios de Aceite GEE Hibridos guardados con éxito. ID:', docRef.id);
+                    window.showFormMessage('Datos guardados con éxito.', 'success');
+                } catch (e) {
+                    console.error("Error al añadir documento: ", e);
+                    window.showFormMessage('Error al guardar los datos. Inténtalo de nuevo. Detalle: ' + e.message, 'error');
+                } finally {
+                    console.log('FLOW: Entrando en el bloque finally para la operación de guardar.');
+                    siteInput.value = '';
+                    numeroTareaInput.value = '';
+                    fechaEjecucionInput.value = '';
+                    horometroInput.value = '';
+                    aceiteCheckbox.checked = false;
+                    filtroAceiteCheckbox.checked = false;
+                    filtroPetroleo1Checkbox.checked = false;
+                    filtroPetroleo2Checkbox.checked = false;
+                    filtroAireCheckbox.checked = false;
+                    filtroTanqueCheckbox.checked = false;
+                    filtroGasesCheckbox.checked = false;
+                    refrigeranteCheckbox.checked = false;
+                    fajaCheckbox.checked = false;
+                    bateriaCheckbox.checked = false;
+
+                    console.log('FLOW: Iniciando showView(mainView) después de un retraso.');
+                    setTimeout(() => {
+                        showView(mainView);
+                        console.log('FLOW: Llamada a showView(mainView) completada después del timeout.');
+                    }, 100);
+                }
+            });
+
+            backFromReviewDataButton.addEventListener('click', () => showView(mainView));
+            reviewFiltrosAceiteHibridosButton.addEventListener('click', () => showView(selectSiteReviewHibridosView));
+            backFromSelectSiteReviewHibridosButton.addEventListener('click', () => showView(reviewDataView));
+
+            confirmSiteReviewButton.addEventListener('click', async () => {
+                const selectedSite = siteReviewInput.value.trim();
+                if (!selectedSite) {
+                    console.warn('Advertencia: Por favor, selecciona un Site para revisar.');
+                    window.showFormMessage('Por favor, selecciona un Site para revisar.', 'error');
+                    return;
+                }
+                currentSiteDisplay.textContent = `Site: ${selectedSite}`;
+                showView(displayCambiosAceiteHibridosDataView);
+                await loadConfig();
+                loadCambiosAceiteHibridosData(selectedSite);
+            });
+
+            backFromDisplayCambiosAceiteHibridosDataButton.addEventListener('click', () => {
+                dataDisplayTableContainer.innerHTML = '';
                 horasTrabajaDiaInput.value = '6.8';
                 frecuenciaCambioInput.value = '37';
                 ultimoCambioAceiteSummary.textContent = 'N/A';
                 proximoCambioAceiteSummary.textContent = 'N/A';
                 horasDesdeUltimoCambioSummary.textContent = 'N/A';
+                
                 proximoCambioAceiteSummaryItem.classList.remove('overdue');
                 document.body.classList.remove('overdue-page-background');
-            }
-        }
+                editWarningMessage.classList.add('hidden');
+                clearTimeout(warningTimeout);
 
-        // Añadir listeners a los nuevos campos de entrada para la advertencia y el recálculo
-        if (horasTrabajaDiaInput) {
-            horasTrabajaDiaInput.addEventListener('input', () => {
-                showEditWarning();
-                saveConfig(); // Save config on input change
-                updateSummaryCalculations();
+                showView(selectSiteReviewHibridosView);
             });
-        }
-        if (frecuenciaCambioInput) {
-            frecuenciaCambioInput.addEventListener('input', () => {
-                showEditWarning();
-                saveConfig(); // Save config on input change
-                updateSummaryCalculations();
-            });
-        }
 
-        async function loadCambiosAceiteHibridosData(site) {
-            // Limpiar mensajes y tabla anterior
-            loadingMessage.classList.remove('hidden');
-            errorMessage.classList.add('hidden');
-            noDataMessage.classList.add('hidden');
-            dataDisplayTableContainer.innerHTML = ''; // Limpiar tabla existente
-            
-            editWarningMessage.classList.add('hidden'); // Ocultar advertencia al cargar nuevos datos
-            clearTimeout(warningTimeout); // Limpiar cualquier timeout de advertencia
+            let unsubscribe = null;
+            let currentTableData = [];
+            let warningTimeout;
 
-            // Esperar a que Firebase esté listo
-            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
-
-            const currentDb = window.db; // Access from window
-            const currentUserId = window.getUserId(); // Use the getter function
-            const currentAppId = window.getAppId(); // Use the getter function
-
-            if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
-                errorMessage.textContent = 'Error: Usuario no autenticado o Firebase no inicializado.';
-                errorMessage.classList.remove('hidden');
-                loadingMessage.classList.add('hidden');
-                console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar datos.');
-                return;
+            function showEditWarning() {
+                editWarningMessage.textContent = 'Cuidado los cambios podrían afectar los cálculos al mantenimiento.';
+                editWarningMessage.classList.remove('hidden');
+                clearTimeout(warningTimeout);
+                warningTimeout = setTimeout(() => {
+                    editWarningMessage.classList.add('hidden');
+                }, 5000);
             }
 
-            // Desuscribirse de cualquier listener anterior para evitar duplicados
-            if (unsubscribe) {
-                unsubscribe();
+            async function saveConfig() {
+                await window.firebaseReadyPromise;
+
+                const currentDb = window.db;
+                const currentUserId = window.getUserId();
+                const currentAppId = window.getAppId();
+
+                if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
+                    console.error('Error: Usuario no autenticado o Firebase no inicializado para guardar configuración.');
+                    return;
+                }
+
+                const configData = {
+                    horasTrabajaDia: parseFloat(horasTrabajaDiaInput.value),
+                    frecuenciaCambio: parseInt(frecuenciaCambioInput.value)
+                };
+
+                try {
+                    const configDocRef = doc(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/config`, 'summaryConfig');
+                    await setDoc(configDocRef, configData, { merge: true });
+                    console.log('Configuración guardada con éxito.');
+                } catch (e) {
+                    console.error('Error al guardar configuración:', e);
+                }
             }
 
-            try {
-                const q = query(
-                    collection(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`),
-                    where("site", "==", site)
-                );
+            async function loadConfig() {
+                await window.firebaseReadyPromise;
 
-                unsubscribe = onSnapshot(q, (querySnapshot) => {
+                const currentDb = window.db;
+                const currentUserId = window.getUserId();
+                const currentAppId = window.getAppId();
+
+                if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
+                    console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar configuración.');
+                    return;
+                }
+
+                try {
+                    const configDocRef = doc(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/config`, 'summaryConfig');
+                    const configDocSnap = await getDoc(configDocRef);
+
+                    if (configDocSnap.exists()) {
+                        const configData = configDocSnap.data();
+                        if (configData.horasTrabajaDia !== undefined) {
+                            horasTrabajaDiaInput.value = configData.horasTrabajaDia.toFixed(1);
+                        }
+                        if (configData.frecuenciaCambio !== undefined) {
+                            frecuenciaCambioInput.value = configData.frecuenciaCambio;
+                        }
+                        console.log('Configuración cargada con éxito:', configData);
+                    } else {
+                        console.log('No se encontró configuración guardada. Usando valores predeterminados.');
+                        horasTrabajaDiaInput.value = '6.8';
+                        frecuenciaCambioInput.value = '37';
+                    }
+                } catch (e) {
+                    console.error('Error al cargar configuración:', e);
+                    horasTrabajaDiaInput.value = '6.8';
+                    frecuenciaCambioInput.value = '37';
+                }
+            }
+
+            function updateSummaryCalculations() {
+                const horasTrabajaPorDia = parseFloat(horasTrabajaDiaInput.value);
+                const fixedFrecuenciaCambio = parseInt(frecuenciaCambioInput.value);
+
+                const latestData = currentTableData.length > 0 ? currentTableData[0] : null;
+
+                if (latestData && latestData.fechaEjecucion) {
+                    const latestDate = new Date(latestData.fechaEjecucion + 'T00:00:00');
+                    const formattedLatestDate = latestDate.toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                    ultimoCambioAceiteSummary.textContent = formattedLatestDate;
+
+                    frecuenciaCambioInput.value = isNaN(fixedFrecuenciaCambio) ? '37' : fixedFrecuenciaCambio;
+                    
+                    const nextChangeDate = new Date(latestDate);
+                    if (!isNaN(fixedFrecuenciaCambio)) {
+                        nextChangeDate.setDate(latestDate.getDate() + fixedFrecuenciaCambio);
+                    }
+                    const formattedNextChangeDate = nextChangeDate.toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                    proximoCambioAceiteSummary.textContent = formattedNextChangeDate;
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    nextChangeDate.setHours(0, 0, 0, 0);
+
+                    if (nextChangeDate < today) {
+                        proximoCambioAceiteSummaryItem.classList.add('overdue');
+                        document.body.classList.add('overdue-page-background');
+                    } else {
+                        proximoCambioAceiteSummaryItem.classList.remove('overdue');
+                        document.body.classList.remove('overdue-page-background');
+                    }
+
+                    horasTrabajaDiaInput.value = isNaN(horasTrabajaPorDia) ? '6.8' : horasTrabajaPorDia.toFixed(1);
+
+                    if (!isNaN(horasTrabajaPorDia)) {
+                        const diffTime = Math.abs(today.getTime() - latestDate.getTime());
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        const horasTranscurridas = diffDays * horasTrabajaPorDia;
+                        horasDesdeUltimoCambioSummary.textContent = `${horasTranscurridas.toFixed(1)} horas`;
+                    } else {
+                        horasDesdeUltimoCambioSummary.textContent = 'N/A';
+                    }
+                } else {
+                    horasTrabajaDiaInput.value = '6.8';
+                    frecuenciaCambioInput.value = '37';
+                    ultimoCambioAceiteSummary.textContent = 'N/A';
+                    proximoCambioAceiteSummary.textContent = 'N/A';
+                    horasDesdeUltimoCambioSummary.textContent = 'N/A';
+                    proximoCambioAceiteSummaryItem.classList.remove('overdue');
+                    document.body.classList.remove('overdue-page-background');
+                }
+            }
+
+            if (horasTrabajaDiaInput) {
+                horasTrabajaDiaInput.addEventListener('input', () => {
+                    showEditWarning();
+                    saveConfig();
+                    updateSummaryCalculations();
+                });
+            }
+            if (frecuenciaCambioInput) {
+                frecuenciaCambioInput.addEventListener('input', () => {
+                    showEditWarning();
+                    saveConfig();
+                    updateSummaryCalculations();
+                });
+            }
+
+            async function loadCambiosAceiteHibridosData(site) {
+                loadingMessage.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+                noDataMessage.classList.add('hidden');
+                dataDisplayTableContainer.innerHTML = '';
+                
+                editWarningMessage.classList.add('hidden');
+                clearTimeout(warningTimeout);
+
+                await window.firebaseReadyPromise;
+
+                const currentDb = window.db;
+                const currentUserId = window.getUserId();
+                const currentAppId = window.getAppId();
+
+                if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
+                    errorMessage.textContent = 'Error: Usuario no autenticado o Firebase no inicializado.';
+                    errorMessage.classList.remove('hidden');
                     loadingMessage.classList.add('hidden');
-                    errorMessage.classList.add('hidden');
-                    noDataMessage.classList.add('hidden');
-                    dataDisplayTableContainer.innerHTML = ''; // Limpiar tabla antes de reconstruir
-                    proximoCambioAceiteSummaryItem.classList.remove('overdue'); // Resetear la clase antes de aplicar
-                    document.body.classList.remove('overdue-page-background'); // Resetear la clase del body antes de aplicar
+                    console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar datos.');
+                    return;
+                }
 
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+
+                try {
+                    const q = query(
+                        collection(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`),
+                        where("site", "==", site)
+                    );
+
+                    unsubscribe = onSnapshot(q, (querySnapshot) => {
+                        loadingMessage.classList.add('hidden');
+                        errorMessage.classList.add('hidden');
+                        noDataMessage.classList.add('hidden');
+                        dataDisplayTableContainer.innerHTML = '';
+                        proximoCambioAceiteSummaryItem.classList.remove('overdue');
+                        document.body.classList.remove('overdue-page-background');
+
+                        if (querySnapshot.empty) {
+                            noDataMessage.classList.remove('hidden');
+                            currentTableData = [];
+                            updateSummaryCalculations();
+                            console.log('Snapshot received. No documents found for site:', site);
+                            return;
+                        }
+
+                        const allDocs = [];
+                        querySnapshot.forEach((doc) => {
+                            allDocs.push(doc.data());
+                        });
+
+                        allDocs.sort((a, b) => {
+                            const dateComparison = b.fechaEjecucion.localeCompare(a.fechaEjecucion);
+                            if (dateComparison !== 0) {
+                                return dateComparison;
+                            }
+                            return b.timestamp.localeCompare(a.timestamp);
+                        });
+
+                        const filteredDocs = [];
+                        const seenTaskNumbers = new Set();
+
+                        allDocs.forEach(doc => {
+                            if (!seenTaskNumbers.has(doc.numeroTarea)) {
+                                filteredDocs.push(doc);
+                                seenTaskNumbers.add(doc.numeroTarea);
+                            }
+                        });
+
+                        currentTableData = filteredDocs;
+                        console.log('Snapshot received. Number of documents (filtered):', filteredDocs.length);
+                        console.log('Documents received (filtered):', filteredDocs);
+
+                        updateSummaryCalculations();
+
+                        let tableHTML = `
+                            <table class="data-table" id="cambiosAceiteHibridosTable">
+                                <thead>
+                                    <tr>
+                                        <th>Site</th>
+                                        <th>Tarea</th>
+                                        <th>Fecha</th>
+                                        <th>Horómetro</th>
+                                        <th>Aceite</th>
+                                        <th>Filtro Aceite</th>
+                                        <th>Filtro Petróleo 1</th>
+                                        <th>Filtro Petróleo 2</th>
+                                        <th>Filtro Aire</th>
+                                        <th>Filtro Tanque</th>
+                                        <th>Filtro Gases</th>
+                                        <th>Refrigerante</th>
+                                        <th>Faja</th>
+                                        <th>Batería</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+
+                        filteredDocs.forEach((data) => {
+                            const tableDate = new Date(data.fechaEjecucion + 'T00:00:00');
+                            const formattedTableDate = tableDate.toLocaleDateString('es-ES', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+
+                            tableHTML += `
+                                <tr>
+                                    <td>${data.site || 'N/A'}</td>
+                                    <td>${data.numeroTarea || 'N/A'}</td>
+                                    <td>${formattedTableDate || 'N/A'}</td>
+                                    <td>${data.horometro !== undefined ? data.horometro.toFixed(1) : 'N/A'}</td>
+                                    <td>${data.aceite ? 'Sí' : 'No'}</td>
+                                    <td>${data.filtroAceite ? 'Sí' : 'No'}</td>
+                                    <td>${data.filtroPetroleo1 ? 'Sí' : 'No'}</td>
+                                    <td>${data.filtroPetroleo2 ? 'Sí' : 'No'}</td>
+                                    <td>${data.filtroAire ? 'Sí' : 'No'}</td>
+                                    <td>${data.filtroTanque ? 'Sí' : 'No'}</td>
+                                    <td>${data.filtroGases ? 'Sí' : 'No'}</td>
+                                    <td>${data.refrigerante ? 'Sí' : 'No'}</td>
+                                    <td>${data.faja ? 'Sí' : 'No'}</td>
+                                    <td>${data.bateria ? 'Sí' : 'No'}</td>
+                                </tr>
+                            `;
+                        });
+
+                        tableHTML += `</tbody></table>`;
+                        dataDisplayTableContainer.innerHTML = tableHTML;
+                    });
+
+                } catch (e) {
+                    console.error("Error al cargar documentos: ", e);
+                    loadingMessage.classList.add('hidden');
+                    errorMessage.textContent = 'Error al cargar los datos: ' + e.message;
+                    errorMessage.classList.remove('hidden');
+                }
+            }
+
+            async function downloadAllCambiosAceiteHibridosData() {
+                await window.firebaseReadyPromise;
+
+                const currentDb = window.db;
+                const currentUserId = window.getUserId();
+                const currentAppId = window.getAppId();
+
+                if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
+                    console.error('Error: Usuario no autenticado o Firebase no inicializado para descargar todos los datos.');
+                    window.showFormMessage('Error: Usuario no autenticado o Firebase no inicializado para descargar.', 'error');
+                    return;
+                }
+
+                try {
+                    window.showFormMessage('Generando Excel, por favor espera...', 'success');
+
+                    const q = collection(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`);
+                    const querySnapshot = await getDocs(q);
 
                     if (querySnapshot.empty) {
-                        noDataMessage.classList.remove('hidden');
-                        currentTableData = []; // Limpiar los datos de la tabla para descarga
-                        updateSummaryCalculations(); // Llamar para resetear el resumen
-                        console.log('Snapshot received. No documents found for site:', site);
+                        console.warn('Advertencia: No hay datos de cambios de aceite de Híbridos para descargar.');
+                        window.showFormMessage('No hay datos para descargar.', 'warning');
                         return;
                     }
 
-                    // Convertir los documentos a un array para poder ordenar
                     const allDocs = [];
                     querySnapshot.forEach((doc) => {
                         allDocs.push(doc.data());
                     });
 
-                    // Ordenar por fechaEjecucion (descendente) para encontrar la última
-                    // Asumiendo que fechaEjecucion está en formato YYYY-MM-DD para una fácil comparación de cadenas
                     allDocs.sort((a, b) => {
-                        // Primero por fecha de ejecución (más reciente primero)
                         const dateComparison = b.fechaEjecucion.localeCompare(a.fechaEjecucion);
                         if (dateComparison !== 0) {
                             return dateComparison;
                         }
-                        // Si las fechas son iguales, entonces por timestamp (más reciente primero)
                         return b.timestamp.localeCompare(a.timestamp);
                     });
 
-                    // --- Filtrar para mostrar solo la última entrada por numeroTarea ---
                     const filteredDocs = [];
                     const seenTaskNumbers = new Set();
 
@@ -1180,219 +1200,85 @@
                         }
                     });
 
-                    currentTableData = filteredDocs; // Almacenar los datos filtrados y ordenados para la descarga
-                    console.log('Snapshot received. Number of documents (filtered):', filteredDocs.length);
-                    console.log('Documents received (filtered):', filteredDocs);
+                    const delimiter = ';';
+                    let csvContent = '\uFEFF';
 
-                    // Actualizar el cuadro de resumen con los datos más recientes y los valores de los inputs
-                    updateSummaryCalculations();
+                    const headers = [
+                        "Site", "Tarea", "Fecha", "Horómetro", "Aceite", "Filtro Aceite",
+                        "Filtro Petróleo 1", "Filtro Petróleo 2", "Filtro Aire", "Filtro Tanque",
+                        "Filtro Gases", "Refrigerante", "Faja", "Batería"
+                    ];
+                    csvContent += headers.join(delimiter) + '\n';
 
-                    // --- Construir la tabla de datos ---
-                    let tableHTML = `
-                        <table class="data-table" id="cambiosAceiteHibridosTable">
-                            <thead>
-                                <tr>
-                                    <th>Site</th>
-                                    <th>Tarea</th>
-                                    <th>Fecha</th>
-                                    <th>Horómetro</th>
-                                    <th>Aceite</th>
-                                    <th>Filtro Aceite</th>
-                                    <th>Filtro Petróleo 1</th>
-                                    <th>Filtro Petróleo 2</th>
-                                    <th>Filtro Aire</th>
-                                    <th>Filtro Tanque</th>
-                                    <th>Filtro Gases</th>
-                                    <th>Refrigerante</th>
-                                    <th>Faja</th>
-                                    <th>Batería</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
-
-                    filteredDocs.forEach((data) => { // Usar filteredDocs para la tabla
-                        // Formatear la fecha para la tabla
-                        const tableDate = new Date(data.fechaEjecucion + 'T00:00:00');
-                        const formattedTableDate = tableDate.toLocaleDateString('es-ES', {
+                    filteredDocs.forEach((data) => {
+                        const formattedTableDate = new Date(data.fechaEjecucion + 'T00:00:00');
+                        const formattedTableDateString = formattedTableDate.toLocaleDateString('es-ES', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric'
                         });
 
-                        tableHTML += `
-                            <tr>
-                                <td>${data.site || 'N/A'}</td>
-                                <td>${data.numeroTarea || 'N/A'}</td>
-                                <td>${formattedTableDate || 'N/A'}</td>
-                                <td>${data.horometro !== undefined ? data.horometro.toFixed(1) : 'N/A'}</td>
-                                <td>${data.aceite ? 'Sí' : 'No'}</td>
-                                <td>${data.filtroAceite ? 'Sí' : 'No'}</td>
-                                <td>${data.filtroPetroleo1 ? 'Sí' : 'No'}</td>
-                                <td>${data.filtroPetroleo2 ? 'Sí' : 'No'}</td>
-                                <td>${data.filtroAire ? 'Sí' : 'No'}</td>
-                                <td>${data.filtroTanque ? 'Sí' : 'No'}</td>
-                                <td>${data.filtroGases ? 'Sí' : 'No'}</td>
-                                <td>${data.refrigerante ? 'Sí' : 'No'}</td>
-                                <td>${data.faja ? 'Sí' : 'No'}</td>
-                                <td>${data.bateria ? 'Sí' : 'No'}</td>
-                            </tr>
-                        `;
+                        const rowData = [
+                            data.site || 'N/A',
+                            data.numeroTarea || 'N/A',
+                            formattedTableDateString || 'N/A',
+                            data.horometro !== undefined ? data.horometro.toFixed(1) : 'N/A',
+                            data.aceite ? 'Sí' : 'No',
+                            data.filtroAceite ? 'Sí' : 'No',
+                            data.filtroPetroleo1 ? 'Sí' : 'No',
+                            data.filtroPetroleo2 ? 'Sí' : 'No',
+                            data.filtroAire ? 'Sí' : 'No',
+                            data.filtroTanque ? 'Sí' : 'No',
+                            data.filtroGases ? 'Sí' : 'No',
+                            data.refrigerante ? 'Sí' : 'No',
+                            data.faja ? 'Sí' : 'No',
+                            data.bateria ? 'Sí' : 'No'
+                        ].map(item => {
+                            let text = String(item);
+                            if (text.includes(delimiter) || text.includes('"')) {
+                                text = `"${text.replace(/"/g, '""')}"`;
+                            }
+                            return text;
+                        });
+                        csvContent += rowData.join(delimiter) + '\n';
                     });
 
-                    tableHTML += `</tbody></table>`;
-                    dataDisplayTableContainer.innerHTML = tableHTML;
-                });
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `cambios_aceite_hibridos_todos_los_sites_${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    window.showFormMessage('Datos descargados con éxito.', 'success');
+                    console.log('Datos de todos los sites descargados con éxito.');
 
-            } catch (e) {
-                console.error("Error al cargar documentos: ", e);
-                loadingMessage.classList.add('hidden');
-                errorMessage.textContent = 'Error al cargar los datos: ' + e.message;
-                errorMessage.classList.remove('hidden');
-            }
-        }
-
-        /**
-         * Descarga TODOS los datos de cambios de aceite de Híbridos, aplicando la lógica de "última entrada por número de tarea".
-         */
-        async function downloadAllCambiosAceiteHibridosData() {
-            // Esperar a que Firebase esté listo
-            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
-
-            const currentDb = window.db; // Access from window
-            const currentUserId = window.getUserId();
-            const currentAppId = window.getAppId();
-
-            if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
-                console.error('Error: Usuario no autenticado o Firebase no inicializado para descargar todos los datos.');
-                window.showFormMessage('Error: Usuario no autenticado o Firebase no inicializado para descargar.', 'error');
-                return;
-            }
-
-            try {
-                window.showFormMessage('Generando Excel, por favor espera...', 'success');
-
-                const q = collection(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`);
-                const querySnapshot = await getDocs(q); // Usar getDocs para obtener todos los documentos una sola vez
-
-                if (querySnapshot.empty) {
-                    console.warn('Advertencia: No hay datos de cambios de aceite de Híbridos para descargar.');
-                    window.showFormMessage('No hay datos para descargar.', 'warning');
-                    return;
+                } catch (e) {
+                    console.error("Error al descargar todos los documentos: ", e);
+                    window.showFormMessage('Error al descargar los datos. Inténtalo de nuevo.', 'error');
                 }
-
-                const allDocs = [];
-                querySnapshot.forEach((doc) => {
-                    allDocs.push(doc.data());
-                });
-
-                // Ordenar por fechaEjecucion (descendente) y luego por timestamp (descendente)
-                allDocs.sort((a, b) => {
-                    const dateComparison = b.fechaEjecucion.localeCompare(a.fechaEjecucion);
-                    if (dateComparison !== 0) {
-                        return dateComparison;
-                    }
-                    return b.timestamp.localeCompare(a.timestamp);
-                });
-
-                // Filtrar para mostrar solo la última entrada por numeroTarea
-                const filteredDocs = [];
-                const seenTaskNumbers = new Set();
-
-                allDocs.forEach(doc => {
-                    if (!seenTaskNumbers.has(doc.numeroTarea)) {
-                        filteredDocs.push(doc);
-                        seenTaskNumbers.add(doc.numeroTarea);
-                    }
-                });
-
-                const delimiter = ';'; // Delimitador para CSV
-                let csvContent = '\uFEFF'; // BOM para UTF-8
-
-                // Definir los encabezados de la tabla
-                const headers = [
-                    "Site", "Tarea", "Fecha", "Horómetro", "Aceite", "Filtro Aceite",
-                    "Filtro Petróleo 1", "Filtro Petróleo 2", "Filtro Aire", "Filtro Tanque",
-                    "Filtro Gases", "Refrigerante", "Faja", "Batería"
-                ];
-                csvContent += headers.join(delimiter) + '\n'; // Unir encabezados con punto y coma y añadir nueva línea
-
-                // Procesar los datos filtrados y ordenados
-                filteredDocs.forEach((data) => {
-                    const formattedTableDate = new Date(data.fechaEjecucion + 'T00:00:00');
-                    const formattedTableDateString = formattedTableDate.toLocaleDateString('es-ES', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-
-                    const rowData = [
-                        data.site || 'N/A',
-                        data.numeroTarea || 'N/A',
-                        formattedTableDateString || 'N/A',
-                        data.horometro !== undefined ? data.horometro.toFixed(1) : 'N/A',
-                        data.aceite ? 'Sí' : 'No',
-                        data.filtroAceite ? 'Sí' : 'No',
-                        data.filtroPetroleo1 ? 'Sí' : 'No',
-                        data.filtroPetroleo2 ? 'Sí' : 'No',
-                        data.filtroAire ? 'Sí' : 'No',
-                        data.filtroTanque ? 'Sí' : 'No',
-                        data.filtroGases ? 'Sí' : 'No',
-                        data.refrigerante ? 'Sí' : 'No',
-                        data.faja ? 'Sí' : 'No',
-                        data.bateria ? 'Sí' : 'No'
-                    ].map(item => {
-                        // Escapar punto y coma y comillas dobles en los datos
-                        let text = String(item);
-                        if (text.includes(delimiter) || text.includes('"')) {
-                            text = `"${text.replace(/"/g, '""')}"`;
-                        }
-                        return text;
-                    });
-                    csvContent += rowData.join(delimiter) + '\n';
-                });
-
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `cambios_aceite_hibridos_todos_los_sites_${new Date().toISOString().slice(0,10)}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                window.showFormMessage('Datos descargados con éxito.', 'success');
-                console.log('Datos de todos los sites descargados con éxito.');
-
-            } catch (e) {
-                console.error("Error al descargar todos los documentos: ", e);
-                window.showFormMessage('Error al descargar los datos. Inténtalo de nuevo.', 'error');
             }
-        }
 
-        // Asignar evento al nuevo botón de descarga global
-        downloadAllHibridosDataButton.addEventListener('click', downloadAllCambiosAceiteHibridosData);
+            downloadAllHibridosDataButton.addEventListener('click', downloadAllCambiosAceiteHibridosData);
 
+            reviewAceiteSimplesButton.addEventListener('click', () => {
+                console.log('Clic en "Cambio de aceite en GEE simples" (sin acción visible)');
+            });
 
-        // Lógica para los otros botones de la vista "Revisar Data" (ahora solo registran en consola)
-        reviewAceiteSimplesButton.addEventListener('click', () => {
-            console.log('Clic en "Cambio de aceite en GEE simples" (sin acción visible)');
+            reviewFaenasSimplesButton.addEventListener('click', () => {
+                console.log('Clic en "Faenas GEE simples" (sin acción visible)');
+            });
+
+            reviewFaenasHibridosButton.addEventListener('click', () => {
+                console.log('Clic en "Faenas GEE Hibridos" (sin acción visible)');
+            });
         });
 
-        reviewFaenasSimplesButton.addEventListener('click', () => {
-            console.log('Clic en "Faenas GEE simples" (sin acción visible)');
-        });
-
-        reviewFaenasHibridosButton.addEventListener('click', () => {
-            console.log('Clic en "Faenas GEE Hibridos" (sin acción visible)');
-        });
-
-        // Registrar el Service Worker
         if ('serviceWorker' in navigator) {
-            // Función para registrar el Service Worker
             const registerServiceWorker = () => {
                 console.log('Intentando registrar Service Worker...');
-                // Usamos la ruta relativa './service-worker.js' para que funcione correctamente en subdirectorios de GitHub Pages
                 navigator.serviceWorker.register('./service-worker.js')
                     .then((registration) => {
                         console.log('Service Worker registrado con éxito:', registration.scope);
@@ -1402,21 +1288,18 @@
                     });
             };
 
-            // Preferir navigator.serviceWorker.ready para un registro más robusto
             if (navigator.serviceWorker.ready) {
                 navigator.serviceWorker.ready.then(() => {
                     registerServiceWorker();
                 }).catch(error => {
                     console.error('Error al esperar Service Worker ready:', error);
-                    // Fallback si ready falla por alguna razón inesperada
                     window.addEventListener('load', () => {
                         setTimeout(registerServiceWorker, 500);
                     });
                 });
             } else {
-                // Fallback para navegadores que no soportan navigator.serviceWorker.ready
                 window.addEventListener('load', () => {
-                    setTimeout(registerServiceWorker, 500); // Añadir un pequeño retardo
+                    setTimeout(registerServiceWorker, 500);
                 });
             }
         }
