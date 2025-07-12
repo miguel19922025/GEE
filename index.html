@@ -215,7 +215,9 @@
         /* Estilo para mensajes generales (ELIMINADO) */
     </style>
     <!-- Enlace al manifiesto de la aplicación web (PWA) -->
-    <!-- Se usa una ruta relativa para el manifiesto, asumiendo que está en la misma carpeta o una subcarpeta relativa -->
+    <!-- IMPORTANTE: Si tu aplicación está en un subdirectorio de GitHub Pages (ej. https://usuario.github.io/nombre-repo/),
+         debes ajustar la ruta del manifiesto para incluir ese subdirectorio.
+         Por ejemplo: href="/nombre-repo/manifest.json" -->
     <link rel="manifest" href="./manifest.json">
 </head>
 <body class="antialiased">
@@ -368,8 +370,6 @@
                     <input type="checkbox" id="bateriaCheckbox" class="checkbox-input">
                 </div>
             </div>
-
-            <div id="formMessageDisplay" class="hidden"></div> <!-- Nuevo: para mensajes de formulario -->
 
             <button
                 id="saveCambiosAceiteHibridosButton"
@@ -542,24 +542,6 @@
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let firebaseConfig = {};
-        if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
-            try {
-                firebaseConfig = JSON.parse(__firebase_config);
-            } catch (e) {
-                console.error("Error parsing __firebase_config:", e);
-                // Si hay un error de parseo, mostramos un mensaje al usuario
-                showFormMessage('Error: La configuración de Firebase proporcionada no es válida. Verifica la consola.', 'error');
-            }
-        } else {
-            console.warn("ADVERTENCIA: __firebase_config no está definido o está vacío. Firebase no se inicializará correctamente.");
-            showFormMessage('Error: La configuración de Firebase no está disponible. Asegúrate de que el entorno la proporcione.', 'error');
-        }
-
-        let app;
-        let db;
-        let auth;
-        let userId = 'anonymous'; // Default to anonymous
-
         // Declare a global variable to hold the reference to the message display element
         let formMessageDisplayElement = null; // Initialize as null
 
@@ -568,7 +550,14 @@
         function showFormMessage(message, type) {
             // Ensure the element is available before trying to manipulate it
             if (!formMessageDisplayElement) {
-                console.error('Error: Elemento #formMessageDisplay no encontrado o no inicializado.');
+                // Fallback for very early errors, before DOMContentLoaded
+                console.error('Error: Elemento #formMessageDisplay no encontrado o no inicializado. Mensaje:', message);
+                // Attempt to create a temporary message if the element is truly missing
+                const tempDiv = document.createElement('div');
+                tempDiv.textContent = message;
+                tempDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #fee2e2; color: #ef4444; padding: 10px; border-radius: 5px; z-index: 1000;';
+                document.body.appendChild(tempDiv);
+                setTimeout(() => tempDiv.remove(), 2000);
                 return;
             }
             formMessageDisplayElement.textContent = message;
@@ -589,6 +578,30 @@
             }, 2000); // 2 segundos
         }
         window.showFormMessage = showFormMessage; // Exponer globalmente
+
+        // Intentar parsear firebaseConfig y validar
+        if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
+            try {
+                firebaseConfig = JSON.parse(__firebase_config);
+                // Validar si la configuración tiene placeholders
+                const isFirebaseConfigPlaceholder = firebaseConfig.apiKey === "TU_API_KEY_AQUI" || firebaseConfig.projectId === "tu-project-id";
+                if (isFirebaseConfigPlaceholder) {
+                    console.error("Firebase no se puede inicializar: La configuración contiene marcadores de posición.");
+                    showFormMessage('Error: La configuración de Firebase no es válida o contiene marcadores de posición. Por favor, asegúrate de que __firebase_config tenga tus credenciales reales.', 'error');
+                }
+            } catch (e) {
+                console.error("Error parsing __firebase_config:", e);
+                showFormMessage('Error: La configuración de Firebase proporcionada no es válida. Verifica la consola.', 'error');
+            }
+        } else {
+            console.warn("ADVERTENCIA: __firebase_config no está definido o está vacío. Firebase no se inicializará correctamente.");
+            showFormMessage('Error: La configuración de Firebase no está disponible. Asegúrate de que el entorno la proporcione.', 'error');
+        }
+
+        let app;
+        let db;
+        let auth;
+        let userId = 'anonymous'; // Default to anonymous
 
         // Inicializar Firebase solo si la configuración es válida y no contiene placeholders
         const isFirebaseConfigValid = Object.keys(firebaseConfig).length > 0 &&
@@ -632,8 +645,8 @@
                 showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
             }
         } else {
-            console.error("Firebase no se puede inicializar debido a una configuración inválida o faltante o con valores de marcador de posición.");
-            showFormMessage('Error: La configuración de Firebase no es válida o contiene marcadores de posición. Por favor, asegúrate de que __firebase_config tenga tus credenciales reales.', 'error');
+            // Este caso ya se maneja en el bloque de parseo y validación de firebaseConfig
+            console.error("Firebase no se puede inicializar debido a una configuración inválida o faltante o con valores de marcador de posición (revisar mensajes anteriores).");
         }
 
         // Exponer las variables y funciones de Firebase globalmente para el resto del script
@@ -893,7 +906,7 @@
                     // Restablecer los valores del resumen y los inputs a sus valores por defecto
                     if (horasTrabajaDiaInput) horasTrabajaDiaInput.value = '6.8';
                     if (frecuenciaCambioInput) frecuenciaCambioInput.value = '37';
-                    if (ultimoCambioAceiteSummary) ultimoCambieAceiteSummary.textContent = 'N/A';
+                    if (ultimoCambioAceiteSummary) ultimoCambioAceiteSummary.textContent = 'N/A';
                     if (proximoCambioAceiteSummary) proximoCambioAceiteSummary.textContent = 'N/A';
                     if (horasDesdeUltimoCambioSummary) horasDesdeUltimoCambioSummary.textContent = 'N/A';
                     
@@ -1373,10 +1386,9 @@
         if ('serviceWorker' in navigator) {
             const registerServiceWorker = () => {
                 console.log('Intentando registrar Service Worker...');
-                // Importante: Asegúrate de que las rutas en manifest.json y service-worker.js sean relativas
-                // o incluyan el subdirectorio si la aplicación no se aloja en la raíz del dominio.
-                // Ejemplo para GitHub Pages: si tu repo es 'mi-app', las rutas deberían ser '/mi-app/icons/...'
-                // o simplemente 'icons/...' si el manifest/service worker están en la raíz del repo.
+                // IMPORTANTE: Si tu aplicación está en un subdirectorio de GitHub Pages (ej. https://usuario.github.io/nombre-repo/),
+                // debes ajustar la ruta del Service Worker para incluir ese subdirectorio.
+                // Por ejemplo: navigator.serviceWorker.register('/nombre-repo/service-worker.js')
                 navigator.serviceWorker.register('./service-worker.js')
                     .then((registration) => {
                         console.log('Service Worker registrado con éxito:', registration.scope);
