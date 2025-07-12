@@ -592,6 +592,7 @@
                     authInstance = getAuth(app);
                     console.log('DEBUG: Firebase app, db, auth inicializados.');
 
+                    // Resolve the promise ONLY after the initial auth state is determined
                     onAuthStateChanged(authInstance, async (user) => {
                         if (user) {
                             userId = user.uid;
@@ -605,27 +606,29 @@
                                     await signInAnonymously(authInstance);
                                 }
                                 userId = authInstance.currentUser.uid;
-                                console.log('DEBUG: ID de usuario después del inicio de sesión:', userId);
+                                console.log('DEBUG: ID de usuario después del inicio de sesión anónimo:', userId);
                             } catch (error) {
                                 console.error('ERROR: Fallo la autenticación de Firebase:', error);
                                 window.showFormMessage('Error de autenticación de Firebase. Verifica la consola.', 'error');
+                                // Even on auth error, we resolve the promise to unblock the app,
+                                // but userId will remain 'anonymous' or the error will be handled.
                             }
                         }
-                        // ONLY after auth state is determined, expose them globally
+                        // Expose them globally only once auth state is confirmed
                         window.db = dbInstance;
                         window.auth = authInstance;
-                        window.getUserId = () => userId;
-                        resolve();
+                        window.getUserId = () => userId; // This is now guaranteed to be set
+                        resolve(); // Resolve the promise here
                     });
                 } catch (error) {
                     console.error("ERROR: Fallo al inicializar Firebase:", error);
                     window.showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
-                    resolve();
+                    resolve(); // Resolve even on initialization error to prevent infinite loading
                 }
             } else {
                 console.warn('ADVERTENCIA: Firebase no inicializado. No se encontró apiKey en firebaseConfig.');
                 window.showFormMessage('Advertencia: Firebase no configurado. Las funciones de guardado no funcionarán.', 'warning');
-                resolve();
+                resolve(); // Resolve if no config to allow app to proceed without Firebase features
             }
         });
 
