@@ -1,16 +1,15 @@
 // service-worker.js
 const CACHE_NAME = 'gee-app-v1';
 const urlsToCache = [
-  // IMPORTANTE: Asegúrate de que 'GEE-App' sea el nombre EXACTO de tu repositorio de GitHub.
-  // Si tu aplicación está en la raíz de un dominio personalizado (ej. 'midominio.com'), puedes usar '/' en su lugar.
-  '/GEE-App/', // La raíz de tu aplicación en GitHub Pages
-  '/GEE-App/index.html',
-  '/GEE-App/manifest.json',
-  '/GEE-App/service-worker.js',
+  // ¡CORREGIDO! Ahora usa 'GEE' que es el nombre REAL de tu repositorio.
+  '/GEE/', // La raíz de tu aplicación en GitHub Pages
+  '/GEE/index.html',
+  '/GEE/manifest.json',
+  '/GEE/service-worker.js',
   'https://cdn.tailwindcss.com', // Cacha también Tailwind CSS
-  // Asegúrate de que estos nombres de iconos coincidan con los de tu manifest.json y con los archivos físicos
-  '/GEE-App/icons/icon-192x192.png',
-  '/GEE-App/icons/icon-512x512.png'
+  // ¡CORREGIDO! Ahora usa 'GEE' para las rutas de los iconos.
+  '/GEE/icons/icon-192x192.png',
+  '/GEE/icons/icon-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {
