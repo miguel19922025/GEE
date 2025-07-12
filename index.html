@@ -595,6 +595,10 @@
                     authInstance = getAuth(app);
                     console.log('DEBUG: Firebase app, db, auth inicializados.');
 
+                    // Assign to window immediately after initialization
+                    window.db = dbInstance;
+                    window.auth = authInstance;
+
                     // Resolve the promise ONLY after the initial auth state is determined
                     onAuthStateChanged(authInstance, async (user) => {
                         if (user) {
@@ -617,9 +621,6 @@
                                 // but userId will remain 'anonymous' or the error will be handled.
                             }
                         }
-                        // Expose them globally only once auth state is confirmed
-                        window.db = dbInstance;
-                        window.auth = authInstance;
                         // window.getUserId is already defined, its closure will capture the updated userId
                         resolve(); // Resolve the promise here
                     });
