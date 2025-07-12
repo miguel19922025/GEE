@@ -225,11 +225,25 @@
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let firebaseConfig = {};
+        // IMPORTANTE: Para despliegues fuera de Canvas (ej. GitHub Pages),
+        // asegúrate de que 'firebaseConfig' contenga tu configuración real de Firebase.
+        // Puedes obtenerla desde la consola de Firebase de tu proyecto.
+        // Ejemplo:
+        /*
+        let firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_AUTH_DOMAIN",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_STORAGE_BUCKET",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+        */
         if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
             try {
                 firebaseConfig = JSON.parse(__firebase_config);
             } catch (e) {
-                console.error("Error parsing __firebase_config:", e);
+                console.error("Error al parsear __firebase_config:", e);
             }
         }
 
@@ -248,10 +262,10 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
-                        console.log('Firebase authenticated. User ID:', userId);
+                        console.log('Firebase autenticado. ID de usuario:', userId);
                         resolve(); // Resuelve la promesa cuando el usuario está autenticado
                     } else {
-                        console.log('No user signed in. Attempting anonymous sign-in.');
+                        console.log('Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
                         try {
                             if (initialAuthToken) {
                                 await signInWithCustomToken(auth, initialAuthToken);
@@ -259,10 +273,10 @@
                                 await signInAnonymously(auth);
                             }
                             userId = auth.currentUser.uid;
-                            console.log('Anonymous sign-in successful. User ID:', userId);
+                            console.log('Inicio de sesión anónimo exitoso. ID de usuario:', userId);
                             resolve(); // Resuelve la promesa después del inicio de sesión anónimo
                         } catch (error) {
-                            console.error('Firebase authentication failed:', error);
+                            console.error('Fallo la autenticación de Firebase:', error);
                             // Si la autenticación falla, aún resolvemos la promesa para no bloquear la aplicación,
                             // pero las operaciones de Firebase que requieran autenticación fallarán.
                             resolve();
@@ -270,7 +284,7 @@
                     }
                 });
             } catch (error) {
-                console.error("Failed to initialize Firebase:", error);
+                console.error("Fallo al inicializar Firebase:", error);
                 // Si la inicialización de Firebase falla, resolvemos la promesa para no bloquear,
                 // pero las operaciones de Firebase no funcionarán.
                 resolve();
@@ -773,12 +787,14 @@
             const currentUserId = getUserId(); // Use the getter function
             const currentAppId = getAppId(); // Use the getter function
 
-            console.log('DEBUG: currentUserId:', currentUserId);
-            console.log('DEBUG: db object:', db);
+            console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
+            console.log('DEBUG: objeto db después de firebaseReadyPromise:', db);
+            console.log('DEBUG: auth.currentUser después de firebaseReadyPromise:', auth.currentUser);
+            console.log('DEBUG: firebaseConfig utilizado:', firebaseConfig); // Log the actual config
 
-            if (!currentUserId || currentUserId === 'anonymous' || !db) {
-                console.error('Error: Usuario no autenticado o Firebase no inicializado. Asegúrate de que Firebase se haya configurado correctamente y que el usuario haya iniciado sesión.');
-                showFormMessage('Error: Usuario no autenticado o Firebase no inicializado. Intenta recargar la página o verifica la configuración de Firebase.', 'error');
+            if (!currentUserId || currentUserId === 'anonymous' || !db || !auth.currentUser) {
+                console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado. currentUserId:', currentUserId, 'db:', db, 'auth.currentUser:', auth.currentUser);
+                showFormMessage('Error: No se pudo guardar. Firebase no está listo o el usuario no está autenticado. Verifica la consola para más detalles.', 'error');
                 return;
             }
 
