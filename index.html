@@ -558,6 +558,9 @@
         let authInstance; // Renamed to avoid conflict with global window.auth
         let userId = 'anonymous'; // Default to anonymous
 
+        // Define window.getUserId immediately to ensure it's always a function
+        window.getUserId = () => userId; 
+
         let formMessageTimeout;
         function showFormMessage(message, type) {
             const formMessageDisplay = document.getElementById('formMessageDisplay');
@@ -617,7 +620,7 @@
                         // Expose them globally only once auth state is confirmed
                         window.db = dbInstance;
                         window.auth = authInstance;
-                        window.getUserId = () => userId; // This is now guaranteed to be set
+                        // window.getUserId is already defined, its closure will capture the updated userId
                         resolve(); // Resolve the promise here
                     });
                 } catch (error) {
@@ -804,7 +807,7 @@
 
                 const currentDb = window.db;
                 const currentUserId = window.getUserId();
-                const currentAppId = window.getAppId();
+                const currentAppId = appId; // Corrected: Use appId directly
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                     console.error('Error: Usuario no autenticado o Firebase no inicializado para guardar configuración.');
@@ -833,7 +836,7 @@
 
                 const currentDb = window.db;
                 const currentUserId = window.getUserId();
-                const currentAppId = window.getAppId();
+                const currentAppId = appId; // Corrected: Use appId directly
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                     console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar configuración.');
@@ -946,7 +949,7 @@
 
                 const currentDb = window.db;
                 const currentUserId = window.getUserId();
-                const currentAppId = window.getAppId();
+                const currentAppId = appId; // Corrected: Use appId directly
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                     if (errorMessage) errorMessage.textContent = 'Error: Usuario no autenticado o Firebase no inicializado.';
@@ -1085,7 +1088,7 @@
 
                 const currentDb = window.db; // Access from window
                 const currentUserId = window.getUserId();
-                const currentAppId = window.getAppId();
+                const currentAppId = appId; // Corrected: Use appId directly
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                     console.error('Error: Usuario no autenticado o Firebase no inicializado para descargar todos los datos.');
@@ -1223,7 +1226,7 @@
                     const currentDb = window.db;
                     const currentAuth = window.auth;
                     const currentUserId = window.getUserId();
-                    const currentAppId = window.getAppId();
+                    const currentAppId = appId; // Corrected: Use appId directly
 
                     console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
                     console.log('DEBUG: objeto db después de firebaseReadyPromise:', currentDb);
@@ -1274,7 +1277,7 @@
                         return;
                     }
 
-                    const firestoreCollectionPath = `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`;
+                    const firestoreCollectionPath = `artifacts/${appId}/users/${currentUserId}/cambiosAceiteHibridos`; // Corrected: Use appId directly
 
                     console.log('DEBUG: Intentando añadir datos a la colección:', firestoreCollectionPath);
                     console.log('DEBUG: Datos a añadir:', data);
