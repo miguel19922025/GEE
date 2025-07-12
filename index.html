@@ -291,8 +291,9 @@
             }
         });
 
-        // Exponer firebaseReadyPromise globalmente
+        // Exponer firebaseReadyPromise y firebaseConfig globalmente
         window.firebaseReadyPromise = firebaseReadyPromise;
+        window.firebaseConfig = firebaseConfig; // <-- Añadido para exponer firebaseConfig
 
         window.db = db;
         window.auth = auth;
@@ -790,7 +791,7 @@
             console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
             console.log('DEBUG: objeto db después de firebaseReadyPromise:', db);
             console.log('DEBUG: auth.currentUser después de firebaseReadyPromise:', auth.currentUser);
-            console.log('DEBUG: firebaseConfig utilizado:', firebaseConfig); // Log the actual config
+            console.log('DEBUG: firebaseConfig utilizado:', window.firebaseConfig); // Acceder a través de window
 
             if (!currentUserId || currentUserId === 'anonymous' || !db || !auth.currentUser) {
                 console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado. currentUserId:', currentUserId, 'db:', db, 'auth.currentUser:', auth.currentUser);
