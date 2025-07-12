@@ -166,7 +166,7 @@
         body.overdue-page-background {
             background-color: #ffebeb; /* Un rojo muy claro para el fondo */
             /* Marca de agua "VENCIDO" repetida */
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjUwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCB4PSIxMjUiIHk9IjEyNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjQwIiBfiWxsPSIjZmYwMDAwIiBmaWxsLW9wYWNpdHk9IjAuMDciIHRyYW5zZm9ybT0icm90YXRlKC00NSAxMjUgMTI1KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VkVOQ0lETzwvdGV4dD48L2x2Zz4=');
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjUwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCBxPSIxMjUiIHk9IjEyNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjQwIiBfiWxsPSIjZmYwMDAwIiBmaWxsLW9wYWNpdHk9IjAuMDciIHRyYW5zZm9ybT0icm90YXRlKC00NSAxMjUgMTI1KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VkVOQ0lETzwvdGV4dD48L2x2Zz4=');
             background-repeat: repeat; /* Repetir la marca de agua */
             background-attachment: fixed; /* Para que la marca de agua no se desplace con el scroll */
         }
@@ -280,6 +280,8 @@
         window.getDoc = getDoc;
         window.getDocs = getDocs; // Expose getDocs globally
     </script>
+    <!-- Enlace al manifiesto de la aplicación web (PWA) -->
+    <link rel="manifest" href="/manifest.json">
 </head>
 <body class="antialiased">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md md:max-w-lg lg:max-w-xl text-center">
@@ -606,7 +608,7 @@
         const doc = window.doc;
         const setDoc = window.setDoc;
         const getDoc = window.getDoc;
-        const getDocs = window.getDocs; // Importar getDocs para obtener todos los documentos
+        const getDocs = window.getDocs; // Expose getDocs globally
 
 
         // Obtener referencias a las vistas
@@ -636,6 +638,7 @@
         const reviewFiltrosAceiteHibridosButton = document.getElementById('reviewFiltrosAceiteHibridosButton');
         const reviewAceiteSimplesButton = document.getElementById('reviewAceiteSimplesButton');
         const reviewFaenasSimplesButton = document.getElementById('reviewFaenasSimplesButton');
+        // CORRECTED: Removed the erroneous `= document` assignment
         const reviewFaenasHibridosButton = document.getElementById('reviewFaenasHibridosButton');
         const backFromReviewDataButton = document.getElementById('backFromReviewDataButton');
         // const downloadAllHibridosDataButton = document.getElementById('downloadAllHibridosDataButton'); // Movido
@@ -699,7 +702,7 @@
             });
             viewToShow.classList.remove('hidden');
             viewToShow.classList.add('animated-view'); // Añadir animación al mostrar
-            console.log(`VIEW_CONTROL: Showing: ${viewToShow.id}. Current classes: ${view.classList.value}`);
+            console.log(`VIEW_CONTROL: Showing: ${viewToShow.id}. Current classes: ${viewToShow.classList.value}`);
         }
 
         /**
@@ -1318,6 +1321,39 @@
         reviewFaenasHibridosButton.addEventListener('click', () => {
             console.log('Clic en "Faenas GEE Hibridos" (sin acción visible)');
         });
+
+        // Registrar el Service Worker
+        if ('serviceWorker' in navigator) {
+            // Función para registrar el Service Worker
+            const registerServiceWorker = () => {
+                console.log('Intentando registrar Service Worker...');
+                navigator.serviceWorker.register(new URL('/service-worker.js', window.location.origin).href)
+                    .then((registration) => {
+                        console.log('Service Worker registrado con éxito:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('Fallo el registro del Service Worker:', error);
+                    });
+            };
+
+            // Preferir navigator.serviceWorker.ready para un registro más robusto
+            if (navigator.serviceWorker.ready) {
+                navigator.serviceWorker.ready.then(() => {
+                    registerServiceWorker();
+                }).catch(error => {
+                    console.error('Error al esperar Service Worker ready:', error);
+                    // Fallback si ready falla por alguna razón inesperada
+                    window.addEventListener('load', () => {
+                        setTimeout(registerServiceWorker, 500);
+                    });
+                });
+            } else {
+                // Fallback para navegadores que no soportan navigator.serviceWorker.ready
+                window.addEventListener('load', () => {
+                    setTimeout(registerServiceWorker, 500); // Añadir un pequeño retardo
+                });
+            }
+        }
     </script>
 </body>
 </html>
