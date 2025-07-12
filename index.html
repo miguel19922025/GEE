@@ -644,237 +644,158 @@
         // Asegurarse de que el DOM esté completamente cargado antes de acceder a los elementos
         document.addEventListener('DOMContentLoaded', function() {
             const mainView = document.getElementById('mainView');
+            if (!mainView) console.error('Element #mainView not found!');
             const addDataView = document.getElementById('addDataView');
+            if (!addDataView) console.error('Element #addDataView not found!');
             const cambiosAceiteHibridosView = document.getElementById('cambiosAceiteHibridosView');
+            if (!cambiosAceiteHibridosView) console.error('Element #cambiosAceiteHibridosView not found!');
             const reviewDataView = document.getElementById('reviewDataView');
+            if (!reviewDataView) console.error('Element #reviewDataView not found!');
             const selectSiteReviewHibridosView = document.getElementById('selectSiteReviewHibridosView');
+            if (!selectSiteReviewHibridosView) console.error('Element #selectSiteReviewHibridosView not found!');
             const displayCambiosAceiteHibridosDataView = document.getElementById('displayCambiosAceiteHibridosDataView');
+            if (!displayCambiosAceiteHibridosDataView) console.error('Element #displayCambiosAceiteHibridosDataView not found!');
 
             const addDataButton = document.getElementById('addDataButton');
+            if (!addDataButton) console.error('Element #addDataButton not found!');
             const reviewDataButton = document.getElementById('reviewDataButton');
+            if (!reviewDataButton) console.error('Element #reviewDataButton not found!');
 
             const faenasSimplesButton = document.getElementById('faenasSimplesButton');
+            if (!faenasSimplesButton) console.error('Element #faenasSimplesButton not found!');
             const faenasHibridosButton = document.getElementById('faenasHibridosButton');
+            if (!faenasHibridosButton) console.error('Element #faenasHibridosButton not found!');
             const cambiosAceiteHibridosButton = document.getElementById('cambiosAceiteHibridosButton');
+            if (!cambiosAceiteHibridosButton) console.error('Element #cambiosAceiteHibridosButton not found!');
             const cambiosAceiteSimplesButton = document.getElementById('cambiosAceiteSimplesButton');
+            if (!cambiosAceiteSimplesButton) console.error('Element #cambiosAceiteSimplesButton not found!');
             const backToMainButton = document.getElementById('backToMainButton');
+            if (!backToMainButton) console.error('Element #backToMainButton not found!');
 
             const saveCambiosAceiteHibridosButton = document.getElementById('saveCambiosAceiteHibridosButton');
+            if (!saveCambiosAceiteHibridosButton) console.error('Element #saveCambiosAceiteHibridosButton not found!');
             const backFromCambiosAceiteHibridosButton = document.getElementById('backFromCambiosAceiteHibridosButton');
+            if (!backFromCambiosAceiteHibridosButton) console.error('Element #backFromCambiosAceiteHibridosButton not found!');
 
             const reviewFiltrosAceiteHibridosButton = document.getElementById('reviewFiltrosAceiteHibridosButton');
+            if (!reviewFiltrosAceiteHibridosButton) console.error('Element #reviewFiltrosAceiteHibridosButton not found!');
             const reviewAceiteSimplesButton = document.getElementById('reviewAceiteSimplesButton');
+            if (!reviewAceiteSimplesButton) console.error('Element #reviewAceiteSimplesButton not found!');
             const reviewFaenasSimplesButton = document.getElementById('reviewFaenasSimplesButton');
+            if (!reviewFaenasSimplesButton) console.error('Element #reviewFaenasSimplesButton not found!');
             const reviewFaenasHibridosButton = document.getElementById('reviewFaenasHibridosButton');
+            if (!reviewFaenasHibridosButton) console.error('Element #reviewFaenasHibridosButton not found!');
             const backFromReviewDataButton = document.getElementById('backFromReviewDataButton');
+            if (!backFromReviewDataButton) console.error('Element #backFromReviewDataButton not found!');
 
             const confirmSiteReviewButton = document.getElementById('confirmSiteReviewButton');
+            if (!confirmSiteReviewButton) console.error('Element #confirmSiteReviewButton not found!');
             const backFromSelectSiteReviewHibridosButton = document.getElementById('backFromSelectSiteReviewHibridosButton');
+            if (!backFromSelectSiteReviewHibridosButton) console.error('Element #backFromSelectSiteReviewHibridosButton not found!');
             const siteReviewInput = document.getElementById('siteReviewInput');
+            if (!siteReviewInput) console.error('Element #siteReviewInput not found!');
             const downloadAllHibridosDataButton = document.getElementById('downloadAllHibridosDataButton');
+            if (!downloadAllHibridosDataButton) console.error('Element #downloadAllHibridosDataButton not found!');
 
             const currentSiteDisplay = document.getElementById('currentSiteDisplay');
+            if (!currentSiteDisplay) console.error('Element #currentSiteDisplay not found!');
             const dataDisplayTableContainer = document.getElementById('dataDisplayTableContainer');
+            if (!dataDisplayTableContainer) console.error('Element #dataDisplayTableContainer not found!');
             const loadingMessage = document.getElementById('loadingMessage');
+            if (!loadingMessage) console.error('Element #loadingMessage not found!');
             const errorMessage = document.getElementById('errorMessage');
+            if (!errorMessage) console.error('Element #errorMessage not found!');
             const noDataMessage = document.getElementById('noDataMessage');
+            if (!noDataMessage) console.error('Element #noDataMessage not found!');
             const backFromDisplayCambiosAceiteHibridosDataButton = document.getElementById('backFromDisplayCambiosAceiteHibridosDataButton');
+            if (!backFromDisplayCambiosAceiteHibridosDataButton) console.error('Element #backFromDisplayCambiosAceiteHibridosDataButton not found!');
 
             const horasTrabajaDiaInput = document.getElementById('horasTrabajaDiaInput');
+            if (!horasTrabajaDiaInput) console.error('Element #horasTrabajaDiaInput not found!');
             const ultimoCambioAceiteSummary = document.getElementById('ultimoCambioAceiteSummary');
+            if (!ultimoCambioAceiteSummary) console.error('Element #ultimoCambioAceiteSummary not found!');
             const proximoCambioAceiteSummary = document.getElementById('proximoCambioAceiteSummary');
+            if (!proximoCambioAceiteSummary) console.error('Element #proximoCambioAceiteSummary not found!');
             const frecuenciaCambioInput = document.getElementById('frecuenciaCambioInput');
+            if (!frecuenciaCambioInput) console.error('Element #frecuenciaCambioInput not found!');
             const horasDesdeUltimoCambioSummary = document.getElementById('horasDesdeUltimoCambioSummary');
+            if (!horasDesdeUltimoCambioSummary) console.error('Element #horasDesdeUltimoCambioSummary not found!');
             const proximoCambioAceiteSummaryItem = document.getElementById('proximoCambioAceiteSummaryItem');
+            if (!proximoCambioAceiteSummaryItem) console.error('Element #proximoCambioAceiteSummaryItem not found!');
 
             const editWarningMessage = document.getElementById('editWarningMessage');
+            if (!editWarningMessage) console.error('Element #editWarningMessage not found!');
 
             const siteInput = document.getElementById('siteInput');
+            if (!siteInput) console.error('Element #siteInput not found!');
             const numeroTareaInput = document.getElementById('numeroTareaInput');
+            if (!numeroTareaInput) console.error('Element #numeroTareaInput not found!');
             const fechaEjecucionInput = document.getElementById('fechaEjecucionInput');
+            if (!fechaEjecucionInput) console.error('Element #fechaEjecucionInput not found!');
             const horometroInput = document.getElementById('horometroInput');
+            if (!horometroInput) console.error('Element #horometroInput not found!');
             const aceiteCheckbox = document.getElementById('aceiteCheckbox');
+            if (!aceiteCheckbox) console.error('Element #aceiteCheckbox not found!');
             const filtroAceiteCheckbox = document.getElementById('filtroAceiteCheckbox');
+            if (!filtroAceiteCheckbox) console.error('Element #filtroAceiteCheckbox not found!');
             const filtroPetroleo1Checkbox = document.getElementById('filtroPetroleo1Checkbox');
+            if (!filtroPetroleo1Checkbox) console.error('Element #filtroPetroleo1Checkbox not found!');
             const filtroPetroleo2Checkbox = document.getElementById('filtroPetroleo2Checkbox');
+            if (!filtroPetroleo2Checkbox) console.error('Element #filtroPetroleo2Checkbox not found!');
             const filtroAireCheckbox = document.getElementById('filtroAireCheckbox');
+            if (!filtroAireCheckbox) console.error('Element #filtroAireCheckbox not found!');
             const filtroTanqueCheckbox = document.getElementById('filtroTanqueCheckbox');
+            if (!filtroTanqueCheckbox) console.error('Element #filtroTanqueCheckbox not found!');
             const filtroGasesCheckbox = document.getElementById('filtroGasesCheckbox');
+            if (!filtroGasesCheckbox) console.error('Element #filtroGasesCheckbox not found!');
             const refrigeranteCheckbox = document.getElementById('refrigeranteCheckbox');
+            if (!refrigeranteCheckbox) console.error('Element #refrigeranteCheckbox not found!');
             const fajaCheckbox = document.getElementById('fajaCheckbox');
+            if (!fajaCheckbox) console.error('Element #fajaCheckbox not found!');
             const bateriaCheckbox = document.getElementById('bateriaCheckbox');
+            if (!bateriaCheckbox) console.error('Element #bateriaCheckbox not found!');
 
 
+            // --- Funciones de Navegación ---
             function showView(viewToShow) {
-                console.log('VIEW_CONTROL: showView called for:', viewToShow.id);
+                console.log('VIEW_CONTROL: showView called for:', viewToShow ? viewToShow.id : 'null');
                 const allViews = [mainView, addDataView, cambiosAceiteHibridosView, reviewDataView, selectSiteReviewHibridosView, displayCambiosAceiteHibridosDataView];
                 allViews.forEach(view => {
-                    view.classList.add('hidden');
-                    view.classList.remove('animated-view');
-                    console.log(`VIEW_CONTROL: Hiding: ${view.id}. Current classes: ${view.classList.value}`);
+                    if (view) { // Check if view exists before manipulating
+                        view.classList.add('hidden');
+                        view.classList.remove('animated-view');
+                        console.log(`VIEW_CONTROL: Hiding: ${view.id}. Current classes: ${view.classList.value}`);
+                    }
                 });
-                viewToShow.classList.remove('hidden');
-                viewToShow.classList.add('animated-view');
-                console.log(`VIEW_CONTROL: Showing: ${viewToShow.id}. Current classes: ${viewToShow.classList.value}`);
+                if (viewToShow) { // Check if viewToShow exists before manipulating
+                    viewToShow.classList.remove('hidden');
+                    viewToShow.classList.add('animated-view');
+                    console.log(`VIEW_CONTROL: Showing: ${viewToShow.id}. Current classes: ${viewToShow.classList.value}`);
+                }
             }
 
-            addDataButton.addEventListener('click', () => showView(addDataView));
-            reviewDataButton.addEventListener('click', () => showView(reviewDataView));
-
-            backToMainButton.addEventListener('click', () => showView(mainView));
-            faenasSimplesButton.addEventListener('click', () => console.log('Clic en "Faenas de GEE simples" (sin acción visible)'));
-            faenasHibridosButton.addEventListener('click', () => console.log('Clic en "Faena GEE Hibridos" (sin acción visible)'));
-            cambiosAceiteSimplesButton.addEventListener('click', () => console.log('Clic en "Cambios de aceite GEE simples" (sin acción visible)'));
-
-            cambiosAceiteHibridosButton.addEventListener('click', () => {
-                showView(cambiosAceiteHibridosView);
-                window.showFormMessage('', '');
-            });
-
-            backFromCambiosAceiteHibridosButton.addEventListener('click', () => showView(addDataView));
-
-            saveCambiosAceiteHibridosButton.addEventListener('click', async () => {
-                console.log('EVENT: saveCambiosAceiteHibridosButton clicked.');
-                
-                await window.firebaseReadyPromise;
-
-                const currentDb = window.db;
-                const currentAuth = window.auth;
-                const currentUserId = window.getUserId();
-                const currentAppId = window.getAppId();
-
-                console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
-                console.log('DEBUG: objeto db después de firebaseReadyPromise:', currentDb);
-                console.log('DEBUG: currentAuth.currentUser después de firebaseReadyPromise:', currentAuth ? currentAuth.currentUser : 'undefined (currentAuth is null)');
-                console.log('DEBUG: firebaseConfig utilizado:', window.firebaseConfig);
-
-                if (!currentUserId || currentUserId === 'anonymous' || !currentDb || !currentAuth || !currentAuth.currentUser) {
-                    console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado. currentUserId:', currentUserId, 'db:', currentDb, 'auth.currentUser:', currentAuth ? currentAuth.currentUser : 'undefined');
-                    window.showFormMessage('Error: No se pudo guardar. Firebase no está listo o el usuario no está autenticado. Verifica la consola para más detalles.', 'error');
-                    return;
-                }
-
-                const site = siteInput.value.trim();
-                const numeroTarea = numeroTareaInput.value.trim();
-                const fechaEjecucion = fechaEjecucionInput.value;
-                const horometro = parseFloat(horometroInput.value);
-
-                console.log('DEBUG: Valores de entrada - Site:', site, 'Tarea:', numeroTarea, 'Fecha:', fechaEjecucion, 'Horómetro:', horometro);
-
-                const data = {
-                    site: site,
-                    numeroTarea: numeroTarea,
-                    fechaEjecucion: fechaEjecucion,
-                    horometro: horometro,
-                    aceite: aceiteCheckbox.checked,
-                    filtroAceite: filtroAceiteCheckbox.checked,
-                    filtroPetroleo1: filtroPetroleo1Checkbox.checked,
-                    filtroPetroleo2: filtroPetroleo2Checkbox.checked,
-                    filtroAire: filtroAireCheckbox.checked,
-                    filtroTanque: filtroTanqueCheckbox.checked,
-                    filtroGases: filtroGasesCheckbox.checked,
-                    refrigerante: refrigeranteCheckbox.checked,
-                    faja: fajaCheckbox.checked,
-                    bateria: bateriaCheckbox.checked,
-                    timestamp: new Date().toISOString()
-                };
-
-                let missingFields = [];
-                if (!data.site) missingFields.push('Site');
-                if (!data.numeroTarea) missingFields.push('Número de Tarea');
-                if (!data.fechaEjecucion) missingFields.push('Fecha de Ejecución');
-                if (isNaN(data.horometro)) missingFields.push('Horómetro');
-
-                if (missingFields.length > 0) {
-                    const message = `Por favor, completa los siguientes campos obligatorios: ${missingFields.join(', ')}.`;
-                    console.warn('Advertencia:', message);
-                    window.showFormMessage(message, 'error');
-                    return;
-                }
-
-                const firestoreCollectionPath = `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`;
-
-                console.log('DEBUG: Intentando añadir datos a la colección:', firestoreCollectionPath);
-                console.log('DEBUG: Datos a añadir:', data);
-
-                try {
-                    const docRef = await addDoc(collection(currentDb, firestoreCollectionPath), data);
-                    console.log('DEBUG: Datos de Cambios de Aceite GEE Hibridos guardados con éxito. ID:', docRef.id);
-                    window.showFormMessage('Datos guardados con éxito.', 'success');
-                } catch (e) {
-                    console.error("Error al añadir documento: ", e);
-                    window.showFormMessage('Error al guardar los datos. Inténtalo de nuevo. Detalle: ' + e.message, 'error');
-                } finally {
-                    console.log('FLOW: Entrando en el bloque finally para la operación de guardar.');
-                    siteInput.value = '';
-                    numeroTareaInput.value = '';
-                    fechaEjecucionInput.value = '';
-                    horometroInput.value = '';
-                    aceiteCheckbox.checked = false;
-                    filtroAceiteCheckbox.checked = false;
-                    filtroPetroleo1Checkbox.checked = false;
-                    filtroPetroleo2Checkbox.checked = false;
-                    filtroAireCheckbox.checked = false;
-                    filtroTanqueCheckbox.checked = false;
-                    filtroGasesCheckbox.checked = false;
-                    refrigeranteCheckbox.checked = false;
-                    fajaCheckbox.checked = false;
-                    bateriaCheckbox.checked = false;
-
-                    console.log('FLOW: Iniciando showView(mainView) después de un retraso.');
-                    setTimeout(() => {
-                        showView(mainView);
-                        console.log('FLOW: Llamada a showView(mainView) completada después del timeout.');
-                    }, 100);
-                }
-            });
-
-            backFromReviewDataButton.addEventListener('click', () => showView(mainView));
-            reviewFiltrosAceiteHibridosButton.addEventListener('click', () => showView(selectSiteReviewHibridosView));
-            backFromSelectSiteReviewHibridosButton.addEventListener('click', () => showView(reviewDataView));
-
-            confirmSiteReviewButton.addEventListener('click', async () => {
-                const selectedSite = siteReviewInput.value.trim();
-                if (!selectedSite) {
-                    console.warn('Advertencia: Por favor, selecciona un Site para revisar.');
-                    window.showFormMessage('Por favor, selecciona un Site para revisar.', 'error');
-                    return;
-                }
-                currentSiteDisplay.textContent = `Site: ${selectedSite}`;
-                showView(displayCambiosAceiteHibridosDataView);
-                await loadConfig();
-                loadCambiosAceiteHibridosData(selectedSite);
-            });
-
-            backFromDisplayCambiosAceiteHibridosDataButton.addEventListener('click', () => {
-                dataDisplayTableContainer.innerHTML = '';
-                horasTrabajaDiaInput.value = '6.8';
-                frecuenciaCambioInput.value = '37';
-                ultimoCambioAceiteSummary.textContent = 'N/A';
-                proximoCambioAceiteSummary.textContent = 'N/A';
-                horasDesdeUltimoCambioSummary.textContent = 'N/A';
-                
-                proximoCambioAceiteSummaryItem.classList.remove('overdue');
-                document.body.classList.remove('overdue-page-background');
-                editWarningMessage.classList.add('hidden');
-                clearTimeout(warningTimeout);
-
-                showView(selectSiteReviewHibridosView);
-            });
-
+            // --- Funciones de Carga y Visualización de Datos ---
             let unsubscribe = null;
             let currentTableData = [];
             let warningTimeout;
 
+            /**
+             * Muestra un mensaje de advertencia temporal cuando se editan los campos del resumen.
+             */
             function showEditWarning() {
-                editWarningMessage.textContent = 'Cuidado los cambios podrían afectar los cálculos al mantenimiento.';
-                editWarningMessage.classList.remove('hidden');
-                clearTimeout(warningTimeout);
-                warningTimeout = setTimeout(() => {
-                    editWarningMessage.classList.add('hidden');
-                }, 5000);
+                if (editWarningMessage) {
+                    editWarningMessage.textContent = 'Cuidado los cambios podrían afectar los cálculos al mantenimiento.';
+                    editWarningMessage.classList.remove('hidden');
+                    clearTimeout(warningTimeout);
+                    warningTimeout = setTimeout(() => {
+                        if (editWarningMessage) editWarningMessage.classList.add('hidden');
+                    }, 5000);
+                }
             }
 
+            /**
+             * Guarda la configuración actual de horas y frecuencia en Firestore.
+             */
             async function saveConfig() {
                 await window.firebaseReadyPromise;
 
@@ -888,8 +809,8 @@
                 }
 
                 const configData = {
-                    horasTrabajaDia: parseFloat(horasTrabajaDiaInput.value),
-                    frecuenciaCambio: parseInt(frecuenciaCambioInput.value)
+                    horasTrabajaDia: horasTrabajaDiaInput ? parseFloat(horasTrabajaDiaInput.value) : 6.8,
+                    frecuenciaCambio: frecuenciaCambioInput ? parseInt(frecuenciaCambioInput.value) : 37
                 };
 
                 try {
@@ -901,6 +822,9 @@
                 }
             }
 
+            /**
+             * Carga la configuración de horas y frecuencia desde Firestore.
+             */
             async function loadConfig() {
                 await window.firebaseReadyPromise;
 
@@ -919,28 +843,31 @@
 
                     if (configDocSnap.exists()) {
                         const configData = configDocSnap.data();
-                        if (configData.horasTrabajaDia !== undefined) {
+                        if (horasTrabajaDiaInput && configData.horasTrabajaDia !== undefined) {
                             horasTrabajaDiaInput.value = configData.horasTrabajaDia.toFixed(1);
                         }
-                        if (configData.frecuenciaCambio !== undefined) {
+                        if (frecuenciaCambioInput && configData.frecuenciaCambio !== undefined) {
                             frecuenciaCambioInput.value = configData.frecuenciaCambio;
                         }
                         console.log('Configuración cargada con éxito:', configData);
                     } else {
                         console.log('No se encontró configuración guardada. Usando valores predeterminados.');
-                        horasTrabajaDiaInput.value = '6.8';
-                        frecuenciaCambioInput.value = '37';
+                        if (horasTrabajaDiaInput) horasTrabajaDiaInput.value = '6.8';
+                        if (frecuenciaCambioInput) frecuenciaCambioInput.value = '37';
                     }
                 } catch (e) {
                     console.error('Error al cargar configuración:', e);
-                    horasTrabajaDiaInput.value = '6.8';
-                    frecuenciaCambioInput.value = '37';
+                    if (horasTrabajaDiaInput) horasTrabajaDiaInput.value = '6.8';
+                    if (frecuenciaCambioInput) frecuenciaCambioInput.value = '37';
                 }
             }
 
+            /**
+             * Actualiza los cálculos del cuadro de resumen basándose en los valores actuales de los campos de entrada.
+             */
             function updateSummaryCalculations() {
-                const horasTrabajaPorDia = parseFloat(horasTrabajaDiaInput.value);
-                const fixedFrecuenciaCambio = parseInt(frecuenciaCambioInput.value);
+                const horasTrabajaPorDia = horasTrabajaDiaInput ? parseFloat(horasTrabajaDiaInput.value) : NaN;
+                const fixedFrecuenciaCambio = frecuenciaCambioInput ? parseInt(frecuenciaCambioInput.value) : NaN;
 
                 const latestData = currentTableData.length > 0 ? currentTableData[0] : null;
 
@@ -951,9 +878,9 @@
                         month: '2-digit',
                         year: 'numeric'
                     });
-                    ultimoCambioAceiteSummary.textContent = formattedLatestDate;
+                    if (ultimoCambioAceiteSummary) ultimoCambioAceiteSummary.textContent = formattedLatestDate;
 
-                    frecuenciaCambioInput.value = isNaN(fixedFrecuenciaCambio) ? '37' : fixedFrecuenciaCambio;
+                    if (frecuenciaCambioInput) frecuenciaCambioInput.value = isNaN(fixedFrecuenciaCambio) ? '37' : fixedFrecuenciaCambio;
                     
                     const nextChangeDate = new Date(latestDate);
                     if (!isNaN(fixedFrecuenciaCambio)) {
@@ -964,63 +891,52 @@
                         month: '2-digit',
                         year: 'numeric'
                     });
-                    proximoCambioAceiteSummary.textContent = formattedNextChangeDate;
+                    if (proximoCambioAceiteSummary) proximoCambioAceiteSummary.textContent = formattedNextChangeDate;
 
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     nextChangeDate.setHours(0, 0, 0, 0);
 
-                    if (nextChangeDate < today) {
-                        proximoCambioAceiteSummaryItem.classList.add('overdue');
-                        document.body.classList.add('overdue-page-background');
-                    } else {
-                        proximoCambioAceiteSummaryItem.classList.remove('overdue');
-                        document.body.classList.remove('overdue-page-background');
+                    if (proximoCambioAceiteSummaryItem) {
+                        if (nextChangeDate < today) {
+                            proximoCambioAceiteSummaryItem.classList.add('overdue');
+                            document.body.classList.add('overdue-page-background');
+                        } else {
+                            proximoCambioAceiteSummaryItem.classList.remove('overdue');
+                            document.body.classList.remove('overdue-page-background');
+                        }
                     }
 
-                    horasTrabajaDiaInput.value = isNaN(horasTrabajaPorDia) ? '6.8' : horasTrabajaPorDia.toFixed(1);
+                    if (horasTrabajaDiaInput) horasTrabajaDiaInput.value = isNaN(horasTrabajaPorDia) ? '6.8' : horasTrabajaPorDia.toFixed(1);
 
-                    if (!isNaN(horasTrabajaPorDia)) {
-                        const diffTime = Math.abs(today.getTime() - latestDate.getTime());
-                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                        const horasTranscurridas = diffDays * horasTrabajaPorDia;
-                        horasDesdeUltimoCambioSummary.textContent = `${horasTranscurridas.toFixed(1)} horas`;
-                    } else {
-                        horasDesdeUltimoCambioSummary.textContent = 'N/A';
+                    if (horasDesdeUltimoCambioSummary) {
+                        if (!isNaN(horasTrabajaPorDia)) {
+                            const diffTime = Math.abs(today.getTime() - latestDate.getTime());
+                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                            const horasTranscurridas = diffDays * horasTrabajaPorDia;
+                            horasDesdeUltimoCambioSummary.textContent = `${horasTranscurridas.toFixed(1)} horas`;
+                        } else {
+                            horasDesdeUltimoCambioSummary.textContent = 'N/A';
+                        }
                     }
                 } else {
-                    horasTrabajaDiaInput.value = '6.8';
-                    frecuenciaCambioInput.value = '37';
-                    ultimoCambioAceiteSummary.textContent = 'N/A';
-                    proximoCambioAceiteSummary.textContent = 'N/A';
-                    horasDesdeUltimoCambioSummary.textContent = 'N/A';
-                    proximoCambioAceiteSummaryItem.classList.remove('overdue');
+                    if (horasTrabajaDiaInput) horasTrabajaDiaInput.value = '6.8';
+                    if (frecuenciaCambioInput) frecuenciaCambioInput.value = '37';
+                    if (ultimoCambioAceiteSummary) ultimoCambioAceiteSummary.textContent = 'N/A';
+                    if (proximoCambioAceiteSummary) proximoCambioAceiteSummary.textContent = 'N/A';
+                    if (horasDesdeUltimoCambioSummary) horasDesdeUltimoCambioSummary.textContent = 'N/A';
+                    if (proximoCambioAceiteSummaryItem) proximoCambioAceiteSummaryItem.classList.remove('overdue');
                     document.body.classList.remove('overdue-page-background');
                 }
             }
 
-            if (horasTrabajaDiaInput) {
-                horasTrabajaDiaInput.addEventListener('input', () => {
-                    showEditWarning();
-                    saveConfig();
-                    updateSummaryCalculations();
-                });
-            }
-            if (frecuenciaCambioInput) {
-                frecuenciaCambioInput.addEventListener('input', () => {
-                    showEditWarning();
-                    saveConfig();
-                    updateSummaryCalculations();
-                });
-            }
-
             async function loadCambiosAceiteHibridosData(site) {
-                loadingMessage.classList.remove('hidden');
-                errorMessage.classList.add('hidden');
-                noDataMessage.classList.add('hidden');
-                dataDisplayTableContainer.innerHTML = '';
+                if (loadingMessage) loadingMessage.classList.remove('hidden');
+                if (errorMessage) errorMessage.classList.add('hidden');
+                if (noDataMessage) noDataMessage.classList.add('hidden');
+                if (dataDisplayTableContainer) dataDisplayTableContainer.innerHTML = '';
                 
-                editWarningMessage.classList.add('hidden');
+                if (editWarningMessage) editWarningMessage.classList.add('hidden');
                 clearTimeout(warningTimeout);
 
                 await window.firebaseReadyPromise;
@@ -1030,9 +946,9 @@
                 const currentAppId = window.getAppId();
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
-                    errorMessage.textContent = 'Error: Usuario no autenticado o Firebase no inicializado.';
-                    errorMessage.classList.remove('hidden');
-                    loadingMessage.classList.add('hidden');
+                    if (errorMessage) errorMessage.textContent = 'Error: Usuario no autenticado o Firebase no inicializado.';
+                    if (errorMessage) errorMessage.classList.remove('hidden');
+                    if (loadingMessage) loadingMessage.classList.add('hidden');
                     console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar datos.');
                     return;
                 }
@@ -1048,15 +964,15 @@
                     );
 
                     unsubscribe = onSnapshot(q, (querySnapshot) => {
-                        loadingMessage.classList.add('hidden');
-                        errorMessage.classList.add('hidden');
-                        noDataMessage.classList.add('hidden');
-                        dataDisplayTableContainer.innerHTML = '';
-                        proximoCambioAceiteSummaryItem.classList.remove('overdue');
+                        if (loadingMessage) loadingMessage.classList.add('hidden');
+                        if (errorMessage) errorMessage.classList.add('hidden');
+                        if (noDataMessage) noDataMessage.classList.add('hidden');
+                        if (dataDisplayTableContainer) dataDisplayTableContainer.innerHTML = '';
+                        if (proximoCambioAceiteSummaryItem) proximoCambioAceiteSummaryItem.classList.remove('overdue');
                         document.body.classList.remove('overdue-page-background');
 
                         if (querySnapshot.empty) {
-                            noDataMessage.classList.remove('hidden');
+                            if (noDataMessage) noDataMessage.classList.remove('hidden');
                             currentTableData = [];
                             updateSummaryCalculations();
                             console.log('Snapshot received. No documents found for site:', site);
@@ -1144,21 +1060,27 @@
                         });
 
                         tableHTML += `</tbody></table>`;
-                        dataDisplayTableContainer.innerHTML = tableHTML;
+                        if (dataDisplayTableContainer) dataDisplayTableContainer.innerHTML = tableHTML;
                     });
 
                 } catch (e) {
                     console.error("Error al cargar documentos: ", e);
-                    loadingMessage.classList.add('hidden');
-                    errorMessage.textContent = 'Error al cargar los datos: ' + e.message;
-                    errorMessage.classList.remove('hidden');
+                    if (loadingMessage) loadingMessage.classList.add('hidden');
+                    if (errorMessage) {
+                        errorMessage.textContent = 'Error al cargar los datos: ' + e.message;
+                        errorMessage.classList.remove('hidden');
+                    }
                 }
             }
 
+            /**
+             * Descarga TODOS los datos de cambios de aceite de Híbridos, aplicando la lógica de "última entrada por número de tarea".
+             */
             async function downloadAllCambiosAceiteHibridosData() {
-                await window.firebaseReadyPromise;
+                // Esperar a que Firebase esté listo
+                await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
-                const currentDb = window.db;
+                const currentDb = window.db; // Access from window
                 const currentUserId = window.getUserId();
                 const currentAppId = window.getAppId();
 
@@ -1172,7 +1094,7 @@
                     window.showFormMessage('Generando Excel, por favor espera...', 'success');
 
                     const q = collection(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`);
-                    const querySnapshot = await getDocs(q);
+                    const querySnapshot = await getDocs(q); // Usar getDocs para obtener todos los documentos una sola vez
 
                     if (querySnapshot.empty) {
                         console.warn('Advertencia: No hay datos de cambios de aceite de Híbridos para descargar.');
@@ -1185,6 +1107,7 @@
                         allDocs.push(doc.data());
                     });
 
+                    // Ordenar por fechaEjecucion (descendente) y luego por timestamp (descendente)
                     allDocs.sort((a, b) => {
                         const dateComparison = b.fechaEjecucion.localeCompare(a.fechaEjecucion);
                         if (dateComparison !== 0) {
@@ -1193,6 +1116,7 @@
                         return b.timestamp.localeCompare(a.timestamp);
                     });
 
+                    // Filtrar para mostrar solo la última entrada por numeroTarea
                     const filteredDocs = [];
                     const seenTaskNumbers = new Set();
 
@@ -1203,16 +1127,18 @@
                         }
                     });
 
-                    const delimiter = ';';
-                    let csvContent = '\uFEFF';
+                    const delimiter = ';'; // Delimitador para CSV
+                    let csvContent = '\uFEFF'; // BOM para UTF-8
 
+                    // Definir los encabezados de la tabla
                     const headers = [
                         "Site", "Tarea", "Fecha", "Horómetro", "Aceite", "Filtro Aceite",
                         "Filtro Petróleo 1", "Filtro Petróleo 2", "Filtro Aire", "Filtro Tanque",
                         "Filtro Gases", "Refrigerante", "Faja", "Batería"
                     ];
-                    csvContent += headers.join(delimiter) + '\n';
+                    csvContent += headers.join(delimiter) + '\n'; // Unir encabezados con punto y coma y añadir nueva línea
 
+                    // Procesar los datos filtrados y ordenados
                     filteredDocs.forEach((data) => {
                         const formattedTableDate = new Date(data.fechaEjecucion + 'T00:00:00');
                         const formattedTableDateString = formattedTableDate.toLocaleDateString('es-ES', {
@@ -1237,6 +1163,7 @@
                             data.faja ? 'Sí' : 'No',
                             data.bateria ? 'Sí' : 'No'
                         ].map(item => {
+                            // Escapar punto y coma y comillas dobles en los datos
                             let text = String(item);
                             if (text.includes(delimiter) || text.includes('"')) {
                                 text = `"${text.replace(/"/g, '""')}"`;
@@ -1264,19 +1191,197 @@
                 }
             }
 
-            downloadAllHibridosDataButton.addEventListener('click', downloadAllCambiosAceiteHibridosData);
 
-            reviewAceiteSimplesButton.addEventListener('click', () => {
-                console.log('Clic en "Cambio de aceite en GEE simples" (sin acción visible)');
-            });
+            // --- Lógica de Eventos ---
 
-            reviewFaenasSimplesButton.addEventListener('click', () => {
-                console.log('Clic en "Faenas GEE simples" (sin acción visible)');
-            });
+            if (addDataButton) addDataButton.addEventListener('click', () => showView(addDataView));
+            if (reviewDataButton) reviewDataButton.addEventListener('click', () => showView(reviewDataView));
 
-            reviewFaenasHibridosButton.addEventListener('click', () => {
-                console.log('Clic en "Faenas GEE Hibridos" (sin acción visible)');
-            });
+            if (backToMainButton) backToMainButton.addEventListener('click', () => showView(mainView));
+            if (faenasSimplesButton) faenasSimplesButton.addEventListener('click', () => console.log('Clic en "Faenas de GEE simples" (sin acción visible)'));
+            if (faenasHibridosButton) faenasHibridosButton.addEventListener('click', () => console.log('Clic en "Faena GEE Hibridos" (sin acción visible)'));
+            if (cambiosAceiteSimplesButton) cambiosAceiteSimplesButton.addEventListener('click', () => console.log('Clic en "Cambios de aceite GEE simples" (sin acción visible)'));
+
+            if (cambiosAceiteHibridosButton) {
+                cambiosAceiteHibridosButton.addEventListener('click', () => {
+                    showView(cambiosAceiteHibridosView);
+                    window.showFormMessage('', '');
+                });
+            }
+
+            if (backFromCambiosAceiteHibridosButton) backFromCambiosAceiteHibridosButton.addEventListener('click', () => showView(addDataView));
+
+            if (saveCambiosAceiteHibridosButton) {
+                saveCambiosAceiteHibridosButton.addEventListener('click', async () => {
+                    console.log('EVENT: saveCambiosAceiteHibridosButton clicked.');
+                    
+                    await window.firebaseReadyPromise;
+
+                    const currentDb = window.db;
+                    const currentAuth = window.auth;
+                    const currentUserId = window.getUserId();
+                    const currentAppId = window.getAppId();
+
+                    console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
+                    console.log('DEBUG: objeto db después de firebaseReadyPromise:', currentDb);
+                    console.log('DEBUG: currentAuth.currentUser después de firebaseReadyPromise:', currentAuth ? currentAuth.currentUser : 'undefined (currentAuth is null)');
+                    console.log('DEBUG: firebaseConfig utilizado:', window.firebaseConfig);
+
+                    if (!currentUserId || currentUserId === 'anonymous' || !currentDb || !currentAuth || !currentAuth.currentUser) {
+                        console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado. currentUserId:', currentUserId, 'db:', currentDb, 'auth.currentUser:', currentAuth ? currentAuth.currentUser : 'undefined');
+                        window.showFormMessage('Error: No se pudo guardar. Firebase no está listo o el usuario no está autenticado. Verifica la consola para más detalles.', 'error');
+                        return;
+                    }
+
+                    const site = siteInput ? siteInput.value.trim() : '';
+                    const numeroTarea = numeroTareaInput ? numeroTareaInput.value.trim() : '';
+                    const fechaEjecucion = fechaEjecucionInput ? fechaEjecucionInput.value : '';
+                    const horometro = horometroInput ? parseFloat(horometroInput.value) : NaN;
+
+                    console.log('DEBUG: Valores de entrada - Site:', site, 'Tarea:', numeroTarea, 'Fecha:', fechaEjecucion, 'Horómetro:', horometro);
+
+                    const data = {
+                        site: site,
+                        numeroTarea: numeroTarea,
+                        fechaEjecucion: fechaEjecucion,
+                        horometro: horometro,
+                        aceite: aceiteCheckbox ? aceiteCheckbox.checked : false,
+                        filtroAceite: filtroAceiteCheckbox ? filtroAceiteCheckbox.checked : false,
+                        filtroPetroleo1: filtroPetroleo1Checkbox ? filtroPetroleo1Checkbox.checked : false,
+                        filtroPetroleo2: filtroPetroleo2Checkbox ? filtroPetroleo2Checkbox.checked : false,
+                        filtroAire: filtroAireCheckbox ? filtroAireCheckbox.checked : false,
+                        filtroTanque: filtroTanqueCheckbox ? filtroTanqueCheckbox.checked : false,
+                        filtroGases: filtroGasesCheckbox ? filtroGasesCheckbox.checked : false,
+                        refrigerante: refrigeranteCheckbox ? refrigeranteCheckbox.checked : false,
+                        faja: fajaCheckbox ? fajaCheckbox.checked : false,
+                        bateria: bateriaCheckbox ? bateriaCheckbox.checked : false,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    let missingFields = [];
+                    if (!data.site) missingFields.push('Site');
+                    if (!data.numeroTarea) missingFields.push('Número de Tarea');
+                    if (!data.fechaEjecucion) missingFields.push('Fecha de Ejecución');
+                    if (isNaN(data.horometro)) missingFields.push('Horómetro');
+
+                    if (missingFields.length > 0) {
+                        const message = `Por favor, completa los siguientes campos obligatorios: ${missingFields.join(', ')}.`;
+                        console.warn('Advertencia:', message);
+                        window.showFormMessage(message, 'error');
+                        return;
+                    }
+
+                    const firestoreCollectionPath = `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`;
+
+                    console.log('DEBUG: Intentando añadir datos a la colección:', firestoreCollectionPath);
+                    console.log('DEBUG: Datos a añadir:', data);
+
+                    try {
+                        const docRef = await addDoc(collection(currentDb, firestoreCollectionPath), data);
+                        console.log('DEBUG: Datos de Cambios de Aceite GEE Hibridos guardados con éxito. ID:', docRef.id);
+                        window.showFormMessage('Datos guardados con éxito.', 'success');
+                    } catch (e) {
+                        console.error("Error al añadir documento: ", e);
+                        window.showFormMessage('Error al guardar los datos. Inténtalo de nuevo. Detalle: ' + e.message, 'error');
+                    } finally {
+                        console.log('FLOW: Entrando en el bloque finally para la operación de guardar.');
+                        if (siteInput) siteInput.value = '';
+                        if (numeroTareaInput) numeroTareaInput.value = '';
+                        if (fechaEjecucionInput) fechaEjecucionInput.value = '';
+                        if (horometroInput) horometroInput.value = '';
+                        if (aceiteCheckbox) aceiteCheckbox.checked = false;
+                        if (filtroAceiteCheckbox) filtroAceiteCheckbox.checked = false;
+                        if (filtroPetroleo1Checkbox) filtroPetroleo1Checkbox.checked = false;
+                        if (filtroPetroleo2Checkbox) filtroPetroleo2Checkbox.checked = false;
+                        if (filtroAireCheckbox) filtroAireCheckbox.checked = false;
+                        if (filtroTanqueCheckbox) filtroTanqueCheckbox.checked = false;
+                        if (filtroGasesCheckbox) filtroGasesCheckbox.checked = false;
+                        if (refrigeranteCheckbox) refrigeranteCheckbox.checked = false;
+                        if (fajaCheckbox) fajaCheckbox.checked = false;
+                        if (bateriaCheckbox) bateriaCheckbox.checked = false;
+
+                        console.log('FLOW: Iniciando showView(mainView) después de un retraso.');
+                        setTimeout(() => {
+                            showView(mainView);
+                            console.log('FLOW: Llamada a showView(mainView) completada después del timeout.');
+                        }, 100);
+                    }
+                });
+            }
+
+            if (backFromReviewDataButton) backFromReviewDataButton.addEventListener('click', () => showView(mainView));
+            if (reviewFiltrosAceiteHibridosButton) reviewFiltrosAceiteHibridosButton.addEventListener('click', () => showView(selectSiteReviewHibridosView));
+            if (backFromSelectSiteReviewHibridosButton) backFromSelectSiteReviewHibridosButton.addEventListener('click', () => showView(reviewDataView));
+
+            if (confirmSiteReviewButton) {
+                confirmSiteReviewButton.addEventListener('click', async () => {
+                    const selectedSite = siteReviewInput ? siteReviewInput.value.trim() : '';
+                    if (!selectedSite) {
+                        console.warn('Advertencia: Por favor, selecciona un Site para revisar.');
+                        window.showFormMessage('Por favor, selecciona un Site para revisar.', 'error');
+                        return;
+                    }
+                    if (currentSiteDisplay) currentSiteDisplay.textContent = `Site: ${selectedSite}`;
+                    showView(displayCambiosAceiteHibridosDataView);
+                    await loadConfig();
+                    loadCambiosAceiteHibridosData(selectedSite);
+                });
+            }
+
+            if (backFromDisplayCambiosAceiteHibridosDataButton) {
+                backFromDisplayCambiosAceiteHibridosDataButton.addEventListener('click', () => {
+                    if (dataDisplayTableContainer) dataDisplayTableContainer.innerHTML = '';
+                    if (horasTrabajaDiaInput) horasTrabajaDiaInput.value = '6.8';
+                    if (frecuenciaCambioInput) frecuenciaCambioInput.value = '37';
+                    if (ultimoCambioAceiteSummary) ultimoCambioAceiteSummary.textContent = 'N/A';
+                    if (proximoCambioAceiteSummary) proximoCambioAceiteSummary.textContent = 'N/A';
+                    if (horasDesdeUltimoCambioSummary) horasDesdeUltimoCambioSummary.textContent = 'N/A';
+                    
+                    if (proximoCambioAceiteSummaryItem) proximoCambioAceiteSummaryItem.classList.remove('overdue');
+                    document.body.classList.remove('overdue-page-background');
+                    if (editWarningMessage) editWarningMessage.classList.add('hidden');
+                    clearTimeout(warningTimeout);
+
+                    showView(selectSiteReviewHibridosView);
+                });
+            }
+
+            if (horasTrabajaDiaInput) {
+                horasTrabajaDiaInput.addEventListener('input', () => {
+                    showEditWarning();
+                    saveConfig();
+                    updateSummaryCalculations();
+                });
+            }
+            if (frecuenciaCambioInput) {
+                frecuenciaCambioInput.addEventListener('input', () => {
+                    showEditWarning();
+                    saveConfig();
+                    updateSummaryCalculations();
+                });
+            }
+
+            if (downloadAllHibridosDataButton) {
+                downloadAllHibridosDataButton.addEventListener('click', downloadAllCambiosAceiteHibridosData);
+            }
+
+            if (reviewAceiteSimplesButton) {
+                reviewAceiteSimplesButton.addEventListener('click', () => {
+                    console.log('Clic en "Cambio de aceite en GEE simples" (sin acción visible)');
+                });
+            }
+
+            if (reviewFaenasSimplesButton) {
+                reviewFaenasSimplesButton.addEventListener('click', () => {
+                    console.log('Clic en "Faenas GEE simples" (sin acción visible)');
+                });
+            }
+
+            if (reviewFaenasHibridosButton) {
+                reviewFaenasHibridosButton.addEventListener('click', () => {
+                    console.log('Clic en "Faenas GEE Hibridos" (sin acción visible)');
+                });
+            }
         });
 
         if ('serviceWorker' in navigator) {
