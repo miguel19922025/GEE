@@ -310,7 +310,8 @@
         window.getDocs = getDocs; // Expose getDocs globally
     </script>
     <!-- Enlace al manifiesto de la aplicación web (PWA) -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- Se usa una ruta relativa para el manifiesto, asumiendo que está en la misma carpeta o una subcarpeta relativa -->
+    <link rel="manifest" href="./manifest.json">
 </head>
 <body class="antialiased">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md md:max-w-lg lg:max-w-xl text-center">
@@ -1386,7 +1387,8 @@
             // Función para registrar el Service Worker
             const registerServiceWorker = () => {
                 console.log('Intentando registrar Service Worker...');
-                navigator.serviceWorker.register(new URL('/service-worker.js', window.location.origin).href)
+                // Usamos la ruta relativa './service-worker.js' para que funcione correctamente en subdirectorios de GitHub Pages
+                navigator.serviceWorker.register('./service-worker.js')
                     .then((registration) => {
                         console.log('Service Worker registrado con éxito:', registration.scope);
                     })
