@@ -537,25 +537,42 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, setDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables for Firebase (provided by Canvas environment)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // ====================================================================================================
+        // ¡¡¡ATENCIÓN URGENTE!!!
+        // PARA QUE ESTA APLICACIÓN FUNCIONE CORRECTAMENTE, DEBES REEMPLAZAR TODOS LOS VALORES DE 'firebaseConfig'
+        // CON LA INFORMACIÓN REAL DE TU PROYECTO DE FIREBASE.
 
-        let firebaseConfig = {};
-        if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
-            try {
-                firebaseConfig = JSON.parse(__firebase_config);
-                console.log('DEBUG: Firebase config cargada desde __firebase_config (entorno Canvas).');
-            } catch (e) {
-                console.error("Error al parsear __firebase_config:", e);
-            }
-        } else {
-            console.warn('ADVERTENCIA: __firebase_config no está definido. Asegúrate de haber configurado firebaseConfig manualmente para despliegues fuera de Canvas.');
-        }
+        // PASOS PARA OBTENER TU CONFIGURACIÓN DE FIREBASE:
+        // 1.  Ve a la Consola de Firebase: https://console.firebase.google.com/
+        // 2.  Selecciona tu proyecto.
+        // 3.  Haz clic en el icono de "Configuración del proyecto" (engranaje) junto a "Descripción general del proyecto".
+        // 4.  En la sección "Tus apps", selecciona tu aplicación web (si ya la tienes). Si no, haz clic en el botón
+        //     "Agregar aplicación" y sigue los pasos para agregar una aplicación web.
+        // 5.  Una vez seleccionada o creada, verás un objeto JavaScript llamado 'firebaseConfig'.
+        // 6.  COPIA TODO ESE OBJETO (incluyendo 'apiKey', 'authDomain', 'projectId', etc.) Y PÉGALO EXACTAMENTE
+        //     EN LUGAR DEL OBJETO 'firebaseConfig' A CONTINUACIÓN EN ESTE CÓDIGO.
+
+        // SI NO REEMPLAZAS ESTOS VALORES, ESPECIALMENTE 'apiKey', LA APLICACIÓN NO PODRÁ CONECTARSE A FIREBASE
+        // Y SEGUIRÁ MOSTRANDO ERRORES DE AUTENTICACIÓN.
+        // ====================================================================================================
+
+        // PEGA TU firebaseConfig AQUÍ:
+        const firebaseConfig = {
+          apiKey: "TU_API_KEY_AQUI", // Reemplaza con tu apiKey real
+          authDomain: "tu-dominio.firebaseapp.com", // Reemplaza con tu authDomain real
+          projectId: "tu-project-id", // Reemplaza con tu projectId real
+          storageBucket: "tu-storage-bucket.appspot.com", // Reemplaza con tu storageBucket real
+          messagingSenderId: "tu-messaging-sender-id", // Reemplaza con tu messagingSenderId real
+          appId: "tu-app-id", // Reemplaza con tu appId real
+          measurementId: "tu-measurement-id" // Opcional, si usas Analytics
+        };
+
+        // Define un appId por defecto si no se proporciona desde el entorno
+        const appId = firebaseConfig.projectId || 'default-app-id'; // Usa el projectId como appId si está disponible
 
         let app;
-        let dbInstance; // Renamed to avoid conflict with global window.db
-        let authInstance; // Renamed to avoid conflict with global window.auth
+        let dbInstance;
+        let authInstance;
         let userId = 'anonymous'; // Default to anonymous
 
         // Define window.getUserId immediately to ensure it's always a function
@@ -588,53 +605,52 @@
         window.showFormMessage = showFormMessage;
 
         let firebaseReadyPromise = new Promise(resolve => {
-            if (firebaseConfig && firebaseConfig.apiKey) {
-                try {
-                    app = initializeApp(firebaseConfig);
-                    dbInstance = getFirestore(app);
-                    authInstance = getAuth(app);
-                    console.log('DEBUG: Firebase app, db, auth inicializados.');
+            // Log the firebaseConfig being used for debugging
+            console.log('DEBUG: firebaseConfig utilizada para la inicialización:', firebaseConfig);
 
-                    window.db = dbInstance; // Assign here
-                    window.auth = authInstance; // Assign here
-
-                    onAuthStateChanged(authInstance, async (user) => {
-                        if (user) {
-                            userId = user.uid;
-                            console.log('DEBUG: Firebase autenticado. ID de usuario:', userId);
-                        } else {
-                            console.log('DEBUG: Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
-                            try {
-                                let userCredential;
-                                if (initialAuthToken) {
-                                    userCredential = await signInWithCustomToken(authInstance, initialAuthToken);
-                                } else {
-                                    userCredential = await signInAnonymously(authInstance);
-                                }
-                                userId = userCredential.user.uid; // Get UID directly from the result
-                                console.log('DEBUG: ID de usuario después del inicio de sesión anónimo/custom:', userId);
-                            } catch (error) {
-                                console.error('ERROR: Fallo la autenticación de Firebase:', error);
-                                window.showFormMessage('Error de autenticación de Firebase. Verifica la consola.', 'error');
-                                userId = 'anonymous'; // Explicitly set to anonymous on failure
-                            }
-                        }
-                        resolve(); // Resolve the promise here
-                    });
-                } catch (error) {
-                    console.error("ERROR: Fallo al inicializar Firebase:", error);
-                    window.showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
-                    window.db = null; // Explicitly set to null on error
-                    window.auth = null; // Explicitly set to null on error
-                    resolve(); // Resolve even on initialization error to prevent infinite loading
-                }
-            } else {
-                console.warn('ADVERTENCIA: Firebase no inicializado. No se encontró apiKey en firebaseConfig.');
-                // Modificación aquí para un mensaje más explícito
-                window.showFormMessage('Error: La configuración de Firebase no se ha cargado correctamente. Asegúrate de que __firebase_config esté definido en el entorno del Canvas.', 'error');
+            // Verifica si la configuración de Firebase es válida y no contiene los valores de marcador de posición
+            if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey === "TU_API_KEY_AQUI" || !firebaseConfig.projectId) {
+                console.warn('ADVERTENCIA: Firebase no inicializado. La configuración es inválida o la apiKey es el valor de marcador de posición.');
+                window.showFormMessage('Error: La configuración de Firebase no es válida. Por favor, PEGA TU firebaseConfig COMPLETA y CORRECTA en el código.', 'error');
                 window.db = null; // Explicitly set to null if no config
                 window.auth = null; // Explicitly set to null if no config
                 resolve(); // Resolve if no config to allow app to proceed without Firebase features
+                return; // Stop execution if config is invalid
+            }
+
+            try {
+                app = initializeApp(firebaseConfig);
+                dbInstance = getFirestore(app);
+                authInstance = getAuth(app);
+                console.log('DEBUG: Firebase app, db, auth inicializados.');
+
+                window.db = dbInstance; // Assign here
+                window.auth = authInstance; // Assign here
+
+                onAuthStateChanged(authInstance, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log('DEBUG: Firebase autenticado. ID de usuario:', userId);
+                    } else {
+                        console.log('DEBUG: Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
+                        try {
+                            await signInAnonymously(authInstance);
+                            userId = authInstance.currentUser.uid; // Get UID after anonymous sign-in
+                            console.log('DEBUG: ID de usuario después del inicio de sesión anónimo:', userId);
+                        } catch (error) {
+                            console.error('ERROR: Fallo la autenticación de Firebase:', error);
+                            window.showFormMessage('Error de autenticación de Firebase. Verifica la consola.', 'error');
+                            userId = 'anonymous'; // Explicitly set to anonymous on failure
+                        }
+                    }
+                    resolve(); // Resolve the promise here
+                });
+            } catch (error) {
+                console.error("ERROR: Fallo al inicializar Firebase:", error);
+                window.showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
+                window.db = null; // Explicitly set to null on error
+                window.auth = null; // Explicitly set to null on error
+                resolve(); // Resolve even on initialization error to prevent infinite loading
             }
         });
 
@@ -749,7 +765,7 @@
             if (!filtroAceiteCheckbox) console.error('Element #filtroAceiteCheckbox not found!');
             const filtroPetroleo1Checkbox = document.getElementById('filtroPetroleo1Checkbox');
             if (!filtroPetroleo1Checkbox) console.error('Element #filtroPetroleo1Checkbox not found!');
-            const filtroPetroleo2Checkbox = document.getElementById('filtroPetroleo2Checkbox');
+            const filtroPetroleo2Checkbox = document.getElementById('filtroPetroleo2Checkbox'); 
             if (!filtroPetroleo2Checkbox) console.error('Element #filtroPetroleo2Checkbox not found!');
             const filtroAireCheckbox = document.getElementById('filtroAireCheckbox');
             if (!filtroAireCheckbox) console.error('Element #filtroAireCheckbox not found!');
@@ -810,7 +826,8 @@
 
                 const currentDb = window.db;
                 const currentUserId = window.getUserId();
-                const currentAppId = appId; // Corrected: Use appId directly
+                // Usamos el projectId de firebaseConfig como appId
+                const currentAppId = firebaseConfig.projectId || 'default-app-id';
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                     console.error('Error: Usuario no autenticado o Firebase no inicializado para guardar configuración.');
@@ -839,7 +856,8 @@
 
                 const currentDb = window.db;
                 const currentUserId = window.getUserId();
-                const currentAppId = appId; // Corrected: Use appId directly
+                // Usamos el projectId de firebaseConfig como appId
+                const currentAppId = firebaseConfig.projectId || 'default-app-id';
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                     console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar configuración.');
@@ -952,7 +970,8 @@
 
                 const currentDb = window.db;
                 const currentUserId = window.getUserId();
-                const currentAppId = appId; // Corrected: Use appId directly
+                // Usamos el projectId de firebaseConfig como appId
+                const currentAppId = firebaseConfig.projectId || 'default-app-id';
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                     if (errorMessage) errorMessage.textContent = 'Error: Usuario no autenticado o Firebase no inicializado.';
@@ -1091,7 +1110,8 @@
 
                 const currentDb = window.db; // Access from window
                 const currentUserId = window.getUserId();
-                const currentAppId = appId; // Corrected: Use appId directly
+                // Usamos el projectId de firebaseConfig como appId
+                const currentAppId = firebaseConfig.projectId || 'default-app-id';
 
                 if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                     console.error('Error: Usuario no autenticado o Firebase no inicializado para descargar todos los datos.');
@@ -1229,7 +1249,8 @@
                     const currentDb = window.db;
                     const currentAuth = window.auth;
                     const currentUserId = window.getUserId();
-                    const currentAppId = appId; // Corrected: Use appId directly
+                    // Usamos el projectId de firebaseConfig como appId
+                    const currentAppId = firebaseConfig.projectId || 'default-app-id';
 
                     console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
                     console.log('DEBUG: objeto db después de firebaseReadyPromise:', currentDb);
@@ -1280,7 +1301,7 @@
                         return;
                     }
 
-                    const firestoreCollectionPath = `artifacts/${appId}/users/${currentUserId}/cambiosAceiteHibridos`; // Corrected: Use appId directly
+                    const firestoreCollectionPath = `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`; // Corrected: Use appId directly
 
                     console.log('DEBUG: Intentando añadir datos a la colección:', firestoreCollectionPath);
                     console.log('DEBUG: Datos a añadir:', data);
