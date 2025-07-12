@@ -226,25 +226,30 @@
 
         let firebaseConfig = {};
         // IMPORTANTE: Para despliegues fuera de Canvas (ej. GitHub Pages),
-        // asegúrate de que 'firebaseConfig' contenga tu configuración real de Firebase.
-        // Puedes obtenerla desde la consola de Firebase de tu proyecto.
-        // Ejemplo:
+        // DEBES reemplazar la siguiente línea con tu configuración REAL de Firebase.
+        // Puedes obtenerla desde la consola de Firebase de tu proyecto (Configuración del proyecto -> Tus aplicaciones -> Web).
+        // Ejemplo de cómo se vería tu configuración:
         /*
-        let firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_AUTH_DOMAIN",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_STORAGE_BUCKET",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
+        firebaseConfig = {
+            apiKey: "TU_API_KEY_AQUI",
+            authDomain: "TU_AUTH_DOMAIN_AQUI",
+            projectId: "TU_PROJECT_ID_AQUI",
+            storageBucket: "TU_STORAGE_BUCKET_AQUI",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID_AQUI",
+            appId: "TU_APP_ID_AQUI"
         };
         */
         if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
             try {
                 firebaseConfig = JSON.parse(__firebase_config);
+                console.log('DEBUG: Firebase config cargada desde __firebase_config (entorno Canvas).');
             } catch (e) {
                 console.error("Error al parsear __firebase_config:", e);
             }
+        } else {
+            console.warn('ADVERTENCIA: __firebase_config no está definido. Asegúrate de haber configurado firebaseConfig manualmente para despliegues fuera de Canvas.');
+            // Aquí deberías tener tu configuración manual si no estás en Canvas
+            // firebaseConfig = { ... tus credenciales ... };
         }
 
         let app;
@@ -254,40 +259,48 @@
 
         // Promise para asegurar que Firebase esté listo antes de las operaciones
         let firebaseReadyPromise = new Promise(resolve => {
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+            // Solo intentar inicializar Firebase si firebaseConfig tiene apiKey
+            if (firebaseConfig && firebaseConfig.apiKey) {
+                try {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    console.log('DEBUG: Firebase app, db, auth inicializados.');
 
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        console.log('Firebase autenticado. ID de usuario:', userId);
-                        resolve(); // Resuelve la promesa cuando el usuario está autenticado
-                    } else {
-                        console.log('Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
-                        try {
-                            if (initialAuthToken) {
-                                await signInWithCustomToken(auth, initialAuthToken);
-                            } else {
-                                await signInAnonymously(auth);
+                    onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            console.log('DEBUG: Firebase autenticado. ID de usuario:', userId);
+                            resolve(); // Resuelve la promesa cuando el usuario está autenticado
+                        } else {
+                            console.log('DEBUG: Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
+                            try {
+                                if (initialAuthToken) {
+                                    await signInWithCustomToken(auth, initialAuthToken);
+                                    console.log('DEBUG: Inicio de sesión con token personalizado exitoso.');
+                                } else {
+                                    await signInAnonymously(auth);
+                                    console.log('DEBUG: Inicio de sesión anónimo exitoso.');
+                                }
+                                userId = auth.currentUser.uid;
+                                console.log('DEBUG: ID de usuario después del inicio de sesión:', userId);
+                                resolve(); // Resuelve la promesa después del inicio de sesión anónimo
+                            } catch (error) {
+                                console.error('ERROR: Fallo la autenticación de Firebase:', error);
+                                showFormMessage('Error de autenticación de Firebase. Verifica la consola.', 'error');
+                                resolve(); // Aún resolvemos para no bloquear, pero las operaciones de Firebase podrían fallar.
                             }
-                            userId = auth.currentUser.uid;
-                            console.log('Inicio de sesión anónimo exitoso. ID de usuario:', userId);
-                            resolve(); // Resuelve la promesa después del inicio de sesión anónimo
-                        } catch (error) {
-                            console.error('Fallo la autenticación de Firebase:', error);
-                            // Si la autenticación falla, aún resolvemos la promesa para no bloquear la aplicación,
-                            // pero las operaciones de Firebase que requieran autenticación fallarán.
-                            resolve();
                         }
-                    }
-                });
-            } catch (error) {
-                console.error("Fallo al inicializar Firebase:", error);
-                // Si la inicialización de Firebase falla, resolvemos la promesa para no bloquear,
-                // pero las operaciones de Firebase no funcionarán.
-                resolve();
+                    });
+                } catch (error) {
+                    console.error("ERROR: Fallo al inicializar Firebase:", error);
+                    showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
+                    resolve(); // Si la inicialización falla, resolvemos la promesa para no bloquear.
+                }
+            } else {
+                console.warn('ADVERTENCIA: Firebase no inicializado. No se encontró apiKey en firebaseConfig.');
+                showFormMessage('Advertencia: Firebase no configurado. Las funciones de guardado no funcionarán.', 'warning');
+                resolve(); // Resuelve inmediatamente si no hay configuración para Firebase
             }
         });
 
