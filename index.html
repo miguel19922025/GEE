@@ -630,7 +630,8 @@
                 }
             } else {
                 console.warn('ADVERTENCIA: Firebase no inicializado. No se encontró apiKey en firebaseConfig.');
-                window.showFormMessage('Advertencia: Firebase no configurado. Las funciones de guardado no funcionarán.', 'warning');
+                // Modificación aquí para un mensaje más explícito
+                window.showFormMessage('Error: La configuración de Firebase no se ha cargado correctamente. Asegúrate de que __firebase_config esté definido en el entorno del Canvas.', 'error');
                 window.db = null; // Explicitly set to null if no config
                 window.auth = null; // Explicitly set to null if no config
                 resolve(); // Resolve if no config to allow app to proceed without Firebase features
@@ -1340,7 +1341,7 @@
                 backFromDisplayCambiosAceiteHibridosDataButton.addEventListener('click', () => {
                     if (dataDisplayTableContainer) dataDisplayTableContainer.innerHTML = '';
                     if (horasTrabajaDiaInput) horasTrabajaDiaInput.value = '6.8';
-                    if (frecuenciaCambioInput) frecuenciaCambiaInput.value = '37';
+                    if (frecuenciaCambioInput) frecuenciaCambioInput.value = '37'; // Corregido aquí
                     if (ultimoCambioAceiteSummary) ultimoCambioAceiteSummary.textContent = 'N/A';
                     if (proximoCambioAceiteSummary) proximoCambioAceiteSummary.textContent = 'N/A';
                     if (horasDesdeUltimoCambioSummary) horasDesdeUltimoCambioSummary.textContent = 'N/A';
