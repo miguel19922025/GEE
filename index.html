@@ -322,10 +322,12 @@
         window.getDoc = getDoc;
         window.getDocs = getDocs; // Expose getDocs globally
 
+        // Declaración y exposición global de showFormMessage
+        let formMessageTimeout; // Declarar aquí para que sea accesible globalmente a través de window
         /**
          * Muestra un mensaje temporal en el área de mensajes del formulario.
          * @param {string} message - El mensaje a mostrar.
-         * @param {'success'|'error'} type - El tipo de mensaje para aplicar estilos.
+         * @param {'success'|'error'|'warning'} type - El tipo de mensaje para aplicar estilos.
          */
         function showFormMessage(message, type) {
             const formMessageDisplay = document.getElementById('formMessageDisplay'); // Obtener la referencia dentro de la función
@@ -672,19 +674,143 @@
 
     <script type="module">
         // Importar las funciones de Firebase expuestas globalmente
-        const db = window.db;
-        const getUserId = window.getUserId;
-        const getAppId = window.getAppId;
-        const collection = window.collection;
-        const addDoc = window.addDoc; // Usaremos addDoc para guardar nuevas entradas
-        const query = window.query;
-        const where = window.where;
-        const onSnapshot = window.onSnapshot;
-        const auth = window.auth;
-        const doc = window.doc;
-        const setDoc = window.setDoc;
-        const getDoc = window.getDoc;
-        const getDocs = window.getDocs; // Expose getDocs globally
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, setDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase (provided by Canvas environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let firebaseConfig = {};
+        // IMPORTANTE: Para despliegues fuera de Canvas (ej. GitHub Pages),
+        // DEBES reemplazar la siguiente línea con tu configuración REAL de Firebase.
+        // Puedes obtenerla desde la consola de Firebase de tu proyecto (Configuración del proyecto -> Tus aplicaciones -> Web).
+        // Ejemplo de cómo se vería tu configuración:
+        /*
+        firebaseConfig = {
+            apiKey: "TU_API_KEY_AQUI",
+            authDomain: "TU_AUTH_DOMAIN_AQUI",
+            projectId: "TU_PROJECT_ID_AQUI",
+            storageBucket: "TU_STORAGE_BUCKET_AQUI",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID_AQUI",
+            appId: "TU_APP_ID_AQUI"
+        };
+        */
+        if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
+            try {
+                firebaseConfig = JSON.parse(__firebase_config);
+                console.log('DEBUG: Firebase config cargada desde __firebase_config (entorno Canvas).');
+            } catch (e) {
+                console.error("Error al parsear __firebase_config:", e);
+            }
+        } else {
+            console.warn('ADVERTENCIA: __firebase_config no está definido. Asegúrate de haber configurado firebaseConfig manualmente para despliegues fuera de Canvas.');
+            // Aquí deberías tener tu configuración manual si no estás en Canvas
+            // firebaseConfig = { ... tus credenciales ... };
+        }
+
+        let app;
+        let db;
+        let auth;
+        let userId = 'anonymous'; // Default to anonymous
+
+        // Declaración y exposición global de showFormMessage y formMessageTimeout
+        let formMessageTimeout;
+        /**
+         * Muestra un mensaje temporal en el área de mensajes del formulario.
+         * @param {string} message - El mensaje a mostrar.
+         * @param {'success'|'error'|'warning'} type - El tipo de mensaje para aplicar estilos.
+         */
+        function showFormMessage(message, type) {
+            const formMessageDisplay = document.getElementById('formMessageDisplay');
+            if (!formMessageDisplay) {
+                console.error('Error: Elemento #formMessageDisplay no encontrado.');
+                return;
+            }
+            formMessageDisplay.textContent = message;
+            formMessageDisplay.classList.remove('hidden', 'form-message-error', 'form-message-success');
+            formMessageDisplay.classList.add('block');
+
+            if (type === 'error') {
+                formMessageDisplay.classList.add('form-message-error');
+            } else if (type === 'success') {
+                formMessageDisplay.classList.add('form-message-success');
+            }
+
+            if (window.formMessageTimeout) {
+                clearTimeout(window.formMessageTimeout);
+            }
+            window.formMessageTimeout = setTimeout(() => {
+                formMessageDisplay.classList.add('hidden');
+            }, 5000);
+        }
+        window.showFormMessage = showFormMessage; // Exponer showFormMessage globalmente
+
+        // Promise para asegurar que Firebase esté listo antes de las operaciones
+        let firebaseReadyPromise = new Promise(resolve => {
+            // Solo intentar inicializar Firebase si firebaseConfig tiene apiKey
+            if (firebaseConfig && firebaseConfig.apiKey) {
+                try {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    console.log('DEBUG: Firebase app, db, auth inicializados.');
+
+                    onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            console.log('DEBUG: Firebase autenticado. ID de usuario:', userId);
+                            resolve(); // Resuelve la promesa cuando el usuario está autenticado
+                        } else {
+                            console.log('DEBUG: Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
+                            try {
+                                if (initialAuthToken) {
+                                    await signInWithCustomToken(auth, initialAuthToken);
+                                    console.log('DEBUG: Inicio de sesión con token personalizado exitoso.');
+                                } else {
+                                    await signInAnonymously(auth);
+                                    console.log('DEBUG: Inicio de sesión anónimo exitoso.');
+                                }
+                                userId = auth.currentUser.uid;
+                                console.log('DEBUG: ID de usuario después del inicio de sesión:', userId);
+                                resolve(); // Resuelve la promesa después del inicio de sesión anónimo
+                            } catch (error) {
+                                console.error('ERROR: Fallo la autenticación de Firebase:', error);
+                                window.showFormMessage('Error de autenticación de Firebase. Verifica la consola.', 'error');
+                                resolve(); // Aún resolvemos para no bloquear, pero las operaciones de Firebase podrían fallar.
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error("ERROR: Fallo al inicializar Firebase:", error);
+                    window.showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error');
+                    resolve(); // Si la inicialización falla, resolvemos la promesa para no bloquear.
+                }
+            } else {
+                console.warn('ADVERTENCIA: Firebase no inicializado. No se encontró apiKey en firebaseConfig.');
+                window.showFormMessage('Advertencia: Firebase no configurado. Las funciones de guardado no funcionarán.', 'warning');
+                resolve(); // Resuelve inmediatamente si no hay configuración para Firebase
+            }
+        });
+
+        // Exponer firebaseReadyPromise y firebaseConfig globalmente
+        window.firebaseReadyPromise = firebaseReadyPromise;
+        window.firebaseConfig = firebaseConfig; // <-- Añadido para exponer firebaseConfig
+
+        window.db = db;
+        window.auth = auth;
+        window.getUserId = () => userId;
+        window.getAppId = () => appId;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.query = query;
+        window.where = where;
+        window.onSnapshot = onSnapshot;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.getDocs = getDocs; // Expose getDocs globally
 
 
         // Obtener referencias a las vistas
@@ -746,9 +872,8 @@
         const editWarningMessage = document.getElementById('editWarningMessage');
 
         // Nuevo: Referencia al div de mensajes del formulario
-        const formMessageDisplay = document.getElementById('formMessageDisplay');
-        let formMessageTimeout; // Para controlar el timeout del mensaje del formulario
-
+        // const formMessageDisplay = document.getElementById('formMessageDisplay'); // Ya no se necesita aquí, se obtiene en showFormMessage
+        // let formMessageTimeout; // Ya se declaró globalmente
 
         // Obtener referencias a los campos de entrada y checkboxes (vista de Cambios de Aceite Hibridos)
         const siteInput = document.getElementById('siteInput');
@@ -780,16 +905,6 @@
             viewToShow.classList.add('animated-view'); // Añadir animación al mostrar
             console.log(`VIEW_CONTROL: Showing: ${viewToShow.id}. Current classes: ${viewToShow.classList.value}`);
         }
-
-        /**
-         * Muestra un mensaje temporal en el área de mensajes del formulario.
-         * @param {string} message - El mensaje a mostrar.
-         * @param {'success'|'error'} type - El tipo de mensaje para aplicar estilos.
-         */
-        // La función showFormMessage se ha movido y expuesto globalmente.
-        // Se ha añadido una referencia local a formMessageDisplay dentro de la función para asegurar que siempre se obtenga el elemento correcto.
-        // El control del timeout también se ha globalizado para evitar conflictos.
-        // function showFormMessage(message, type) { ... } // Comentado o eliminado de aquí
 
         // --- Lógica de Eventos ---
 
@@ -926,7 +1041,7 @@
             const selectedSite = siteReviewInput.value.trim();
             if (!selectedSite) {
                 console.warn('Advertencia: Por favor, selecciona un Site para revisar.');
-                window.showFormMessage('Por favor, selecciona un Site para revisar.', 'error'); // Usar window.showFormMessage
+                window.showFormMessage('Por favor, selecciona un Site para revisar.', 'error');
                 return;
             }
             currentSiteDisplay.textContent = `Site: ${selectedSite}`;
@@ -1294,19 +1409,19 @@
 
             if (!currentUserId || currentUserId === 'anonymous' || !db) {
                 console.error('Error: Usuario no autenticado o Firebase no inicializado para descargar todos los datos.');
-                window.showFormMessage('Error: Usuario no autenticado o Firebase no inicializado para descargar.', 'error'); // Usar window.showFormMessage
+                window.showFormMessage('Error: Usuario no autenticado o Firebase no inicializado para descargar.', 'error');
                 return;
             }
 
             try {
-                window.showFormMessage('Generando Excel, por favor espera...', 'success'); // Usar window.showFormMessage para mensaje de carga
+                window.showFormMessage('Generando Excel, por favor espera...', 'success');
 
                 const q = collection(db, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`);
                 const querySnapshot = await getDocs(q); // Usar getDocs para obtener todos los documentos una sola vez
 
                 if (querySnapshot.empty) {
                     console.warn('Advertencia: No hay datos de cambios de aceite de Híbridos para descargar.');
-                    window.showFormMessage('No hay datos para descargar.', 'warning'); // Usar window.showFormMessage
+                    window.showFormMessage('No hay datos para descargar.', 'warning');
                     return;
                 }
 
@@ -1389,12 +1504,12 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                window.showFormMessage('Datos descargados con éxito.', 'success'); // Usar window.showFormMessage
+                window.showFormMessage('Datos descargados con éxito.', 'success');
                 console.log('Datos de todos los sites descargados con éxito.');
 
             } catch (e) {
                 console.error("Error al descargar todos los documentos: ", e);
-                window.showFormMessage('Error al descargar los datos. Inténtalo de nuevo.', 'error'); // Usar window.showFormMessage
+                window.showFormMessage('Error al descargar los datos. Inténtalo de nuevo.', 'error');
             }
         }
 
