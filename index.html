@@ -214,149 +214,6 @@
 
         /* Estilo para mensajes generales (ELIMINADO) */
     </style>
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, setDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global variables for Firebase (provided by Canvas environment)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let firebaseConfig = {};
-        // IMPORTANTE: Para despliegues fuera de Canvas (ej. GitHub Pages),
-        // DEBES reemplazar la siguiente línea con tu configuración REAL de Firebase.
-        // Puedes obtenerla desde la consola de Firebase de tu proyecto (Configuración del proyecto -> Tus aplicaciones -> Web).
-        // Ejemplo de cómo se vería tu configuración:
-        /*
-        firebaseConfig = {
-            apiKey: "TU_API_KEY_AQUI",
-            authDomain: "TU_AUTH_DOMAIN_AQUI",
-            projectId: "TU_PROJECT_ID_AQUI",
-            storageBucket: "TU_STORAGE_BUCKET_AQUI",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID_AQUI",
-            appId: "TU_APP_ID_AQUI"
-        };
-        */
-        if (typeof __firebase_config !== 'undefined' && __firebase_config !== null && String(__firebase_config).trim() !== '') {
-            try {
-                firebaseConfig = JSON.parse(__firebase_config);
-                console.log('DEBUG: Firebase config cargada desde __firebase_config (entorno Canvas).');
-            } catch (e) {
-                console.error("Error al parsear __firebase_config:", e);
-            }
-        } else {
-            console.warn('ADVERTENCIA: __firebase_config no está definido. Asegúrate de haber configurado firebaseConfig manualmente para despliegues fuera de Canvas.');
-            // Aquí deberías tener tu configuración manual si no estás en Canvas
-            // firebaseConfig = { ... tus credenciales ... };
-        }
-
-        let app;
-        let db;
-        let auth;
-        let userId = 'anonymous'; // Default to anonymous
-
-        // Promise para asegurar que Firebase esté listo antes de las operaciones
-        let firebaseReadyPromise = new Promise(resolve => {
-            // Solo intentar inicializar Firebase si firebaseConfig tiene apiKey
-            if (firebaseConfig && firebaseConfig.apiKey) {
-                try {
-                    app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-                    console.log('DEBUG: Firebase app, db, auth inicializados.');
-
-                    onAuthStateChanged(auth, async (user) => {
-                        if (user) {
-                            userId = user.uid;
-                            console.log('DEBUG: Firebase autenticado. ID de usuario:', userId);
-                            resolve(); // Resuelve la promesa cuando el usuario está autenticado
-                        } else {
-                            console.log('DEBUG: Ningún usuario ha iniciado sesión. Intentando iniciar sesión anónimamente.');
-                            try {
-                                if (initialAuthToken) {
-                                    await signInWithCustomToken(auth, initialAuthToken);
-                                    console.log('DEBUG: Inicio de sesión con token personalizado exitoso.');
-                                } else {
-                                    await signInAnonymously(auth);
-                                    console.log('DEBUG: Inicio de sesión anónimo exitoso.');
-                                }
-                                userId = auth.currentUser.uid;
-                                console.log('DEBUG: ID de usuario después del inicio de sesión:', userId);
-                                resolve(); // Resuelve la promesa después del inicio de sesión anónimo
-                            } catch (error) {
-                                console.error('ERROR: Fallo la autenticación de Firebase:', error);
-                                window.showFormMessage('Error de autenticación de Firebase. Verifica la consola.', 'error'); // Usar window.showFormMessage
-                                resolve(); // Aún resolvemos para no bloquear, pero las operaciones de Firebase podrían fallar.
-                            }
-                        }
-                    });
-                } catch (error) {
-                    console.error("ERROR: Fallo al inicializar Firebase:", error);
-                    window.showFormMessage('Error al inicializar Firebase. Verifica la consola.', 'error'); // Usar window.showFormMessage
-                    resolve(); // Si la inicialización falla, resolvemos la promesa para no bloquear.
-                }
-            } else {
-                console.warn('ADVERTENCIA: Firebase no inicializado. No se encontró apiKey en firebaseConfig.');
-                window.showFormMessage('Advertencia: Firebase no configurado. Las funciones de guardado no funcionarán.', 'warning'); // Usar window.showFormMessage
-                resolve(); // Resuelve inmediatamente si no hay configuración para Firebase
-            }
-        });
-
-        // Exponer firebaseReadyPromise y firebaseConfig globalmente
-        window.firebaseReadyPromise = firebaseReadyPromise;
-        window.firebaseConfig = firebaseConfig; // <-- Añadido para exponer firebaseConfig
-
-        window.db = db;
-        window.auth = auth;
-        window.getUserId = () => userId;
-        window.getAppId = () => appId;
-        window.collection = collection;
-        window.addDoc = addDoc;
-        window.query = query;
-        window.where = where;
-        window.onSnapshot = onSnapshot;
-        window.doc = doc;
-        window.setDoc = setDoc;
-        window.getDoc = getDoc;
-        window.getDocs = getDocs; // Expose getDocs globally
-
-        // Declaración y exposición global de showFormMessage
-        let formMessageTimeout; // Declarar aquí para que sea accesible globalmente a través de window
-        /**
-         * Muestra un mensaje temporal en el área de mensajes del formulario.
-         * @param {string} message - El mensaje a mostrar.
-         * @param {'success'|'error'|'warning'} type - El tipo de mensaje para aplicar estilos.
-         */
-        function showFormMessage(message, type) {
-            const formMessageDisplay = document.getElementById('formMessageDisplay'); // Obtener la referencia dentro de la función
-            if (!formMessageDisplay) {
-                console.error('Error: Elemento #formMessageDisplay no encontrado.');
-                return;
-            }
-            formMessageDisplay.textContent = message;
-            formMessageDisplay.classList.remove('hidden', 'form-message-error', 'form-message-success');
-            formMessageDisplay.classList.add('block');
-
-            if (type === 'error') {
-                formMessageDisplay.classList.add('form-message-error');
-            } else if (type === 'success') {
-                formMessageDisplay.classList.add('form-message-success');
-            }
-
-            // Limpiar cualquier timeout existente y establecer uno nuevo
-            if (window.formMessageTimeout) { // Usar window.formMessageTimeout para acceso global
-                clearTimeout(window.formMessageTimeout);
-            }
-            window.formMessageTimeout = setTimeout(() => { // Almacenar en window para acceso global
-                formMessageDisplay.classList.add('hidden');
-            }, 5000); // Ocultar después de 5 segundos
-        }
-        // Exponer showFormMessage globalmente
-        window.showFormMessage = showFormMessage;
-
-    </script>
     <!-- Enlace al manifiesto de la aplicación web (PWA) -->
     <!-- Se usa una ruta relativa para el manifiesto, asumiendo que está en la misma carpeta o una subcarpeta relativa -->
     <link rel="manifest" href="./manifest.json">
@@ -673,7 +530,6 @@
     </div>
 
     <script type="module">
-        // Importar las funciones de Firebase expuestas globalmente
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, setDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -812,7 +668,6 @@
         window.getDoc = getDoc;
         window.getDocs = getDocs; // Expose getDocs globally
 
-
         // Obtener referencias a las vistas
         const mainView = document.getElementById('mainView');
         const addDataView = document.getElementById('addDataView');
@@ -840,10 +695,8 @@
         const reviewFiltrosAceiteHibridosButton = document.getElementById('reviewFiltrosAceiteHibridosButton');
         const reviewAceiteSimplesButton = document.getElementById('reviewAceiteSimplesButton');
         const reviewFaenasSimplesButton = document.getElementById('reviewFaenasSimplesButton');
-        // CORRECTED: Removed the erroneous `= document` assignment
         const reviewFaenasHibridosButton = document.getElementById('reviewFaenasHibridosButton');
         const backFromReviewDataButton = document.getElementById('backFromReviewDataButton');
-        // const downloadAllHibridosDataButton = document.getElementById('downloadAllHibridosDataButton'); // Movido
 
         // Obtener referencias a los botones de la nueva vista "Elegir Site para Revisar Filtros y Aceite Híbridos"
         const confirmSiteReviewButton = document.getElementById('confirmSiteReviewButton');
@@ -858,7 +711,6 @@
         const errorMessage = document.getElementById('errorMessage');
         const noDataMessage = document.getElementById('noDataMessage');
         const backFromDisplayCambiosAceiteHibridosDataButton = document.getElementById('backFromDisplayCambiosAceiteHibridosDataButton');
-        // const downloadExcelButton = document.getElementById('downloadExcelButton'); // Eliminado de esta vista
 
         // Referencias a los elementos del cuadro de resumen (SPANs y ahora INPUTs)
         const horasTrabajaDiaInput = document.getElementById('horasTrabajaDiaInput'); // Ahora es un input
@@ -870,10 +722,6 @@
 
         // Referencia al mensaje de advertencia
         const editWarningMessage = document.getElementById('editWarningMessage');
-
-        // Nuevo: Referencia al div de mensajes del formulario
-        // const formMessageDisplay = document.getElementById('formMessageDisplay'); // Ya no se necesita aquí, se obtiene en showFormMessage
-        // let formMessageTimeout; // Ya se declaró globalmente
 
         // Obtener referencias a los campos de entrada y checkboxes (vista de Cambios de Aceite Hibridos)
         const siteInput = document.getElementById('siteInput');
@@ -934,16 +782,20 @@
             // Esperar a que Firebase esté listo
             await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
-            const currentUserId = getUserId(); // Use the getter function
-            const currentAppId = getAppId(); // Use the getter function
+            // Acceder directamente a las variables globales de Firebase
+            const currentDb = window.db;
+            const currentAuth = window.auth;
+            const currentUserId = window.getUserId(); // Use the getter function
+            const currentAppId = window.getAppId(); // Use the getter function
 
             console.log('DEBUG: currentUserId después de firebaseReadyPromise:', currentUserId);
-            console.log('DEBUG: objeto db después de firebaseReadyPromise:', db);
-            console.log('DEBUG: auth.currentUser después de firebaseReadyPromise:', auth.currentUser);
+            console.log('DEBUG: objeto db después de firebaseReadyPromise:', currentDb);
+            console.log('DEBUG: currentAuth.currentUser después de firebaseReadyPromise:', currentAuth ? currentAuth.currentUser : 'undefined (currentAuth is null)');
             console.log('DEBUG: firebaseConfig utilizado:', window.firebaseConfig); // Acceder a través de window
 
-            if (!currentUserId || currentUserId === 'anonymous' || !db || !auth.currentUser) {
-                console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado. currentUserId:', currentUserId, 'db:', db, 'auth.currentUser:', auth.currentUser);
+            // Robust check for Firebase initialization
+            if (!currentUserId || currentUserId === 'anonymous' || !currentDb || !currentAuth || !currentAuth.currentUser) {
+                console.error('Error: Firebase no está completamente inicializado o el usuario no está autenticado. currentUserId:', currentUserId, 'db:', currentDb, 'auth.currentUser:', currentAuth ? currentAuth.currentUser : 'undefined');
                 window.showFormMessage('Error: No se pudo guardar. Firebase no está listo o el usuario no está autenticado. Verifica la consola para más detalles.', 'error');
                 return;
             }
@@ -994,7 +846,7 @@
 
             try {
                 // Usar addDoc para añadir un nuevo documento con un ID generado automáticamente
-                const docRef = await addDoc(collection(db, firestoreCollectionPath), data);
+                const docRef = await addDoc(collection(currentDb, firestoreCollectionPath), data); // Use currentDb
                 console.log('DEBUG: Datos de Cambios de Aceite GEE Hibridos guardados con éxito. ID:', docRef.id);
                 window.showFormMessage('Datos guardados con éxito.', 'success'); // Mostrar mensaje de éxito
             } catch (e) {
@@ -1092,12 +944,13 @@
          */
         async function saveConfig() {
             // Esperar a que Firebase esté listo
-            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
+            await window.firebaseReadyPromise;
 
-            const currentUserId = getUserId();
-            const currentAppId = getAppId();
+            const currentDb = window.db; // Access from window
+            const currentUserId = window.getUserId();
+            const currentAppId = window.getAppId();
 
-            if (!currentUserId || currentUserId === 'anonymous' || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                 console.error('Error: Usuario no autenticado o Firebase no inicializado para guardar configuración.');
                 return;
             }
@@ -1108,8 +961,8 @@
             };
 
             try {
-                const configDocRef = doc(db, `artifacts/${currentAppId}/users/${currentUserId}/config`, 'summaryConfig');
-                await setDoc(configDocRef, configData, { merge: true }); // Use merge: true to update specific fields
+                const configDocRef = doc(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/config`, 'summaryConfig');
+                await setDoc(configDocRef, configData, { merge: true });
                 console.log('Configuración guardada con éxito.');
             } catch (e) {
                 console.error('Error al guardar configuración:', e);
@@ -1121,18 +974,19 @@
          */
         async function loadConfig() {
             // Esperar a que Firebase esté listo
-            await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
+            await window.firebaseReadyPromise;
 
-            const currentUserId = getUserId();
-            const currentAppId = getAppId();
+            const currentDb = window.db; // Access from window
+            const currentUserId = window.getUserId();
+            const currentAppId = window.getAppId();
 
-            if (!currentUserId || currentUserId === 'anonymous' || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                 console.error('Error: Usuario no autenticado o Firebase no inicializado para cargar configuración.');
                 return;
             }
 
             try {
-                const configDocRef = doc(db, `artifacts/${currentAppId}/users/${currentUserId}/config`, 'summaryConfig');
+                const configDocRef = doc(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/config`, 'summaryConfig');
                 const configDocSnap = await getDoc(configDocRef);
 
                 if (configDocSnap.exists()) {
@@ -1257,10 +1111,11 @@
             // Esperar a que Firebase esté listo
             await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
-            const currentUserId = getUserId(); // Use the getter function
-            const currentAppId = getAppId(); // Use the getter function
+            const currentDb = window.db; // Access from window
+            const currentUserId = window.getUserId(); // Use the getter function
+            const currentAppId = window.getAppId(); // Use the getter function
 
-            if (!currentUserId || currentUserId === 'anonymous' || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                 errorMessage.textContent = 'Error: Usuario no autenticado o Firebase no inicializado.';
                 errorMessage.classList.remove('hidden');
                 loadingMessage.classList.add('hidden');
@@ -1275,7 +1130,7 @@
 
             try {
                 const q = query(
-                    collection(db, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`),
+                    collection(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`),
                     where("site", "==", site)
                 );
 
@@ -1404,10 +1259,11 @@
             // Esperar a que Firebase esté listo
             await window.firebaseReadyPromise; // Usar window.firebaseReadyPromise
 
-            const currentUserId = getUserId();
-            const currentAppId = getAppId();
+            const currentDb = window.db; // Access from window
+            const currentUserId = window.getUserId();
+            const currentAppId = window.getAppId();
 
-            if (!currentUserId || currentUserId === 'anonymous' || !db) {
+            if (!currentUserId || currentUserId === 'anonymous' || !currentDb) {
                 console.error('Error: Usuario no autenticado o Firebase no inicializado para descargar todos los datos.');
                 window.showFormMessage('Error: Usuario no autenticado o Firebase no inicializado para descargar.', 'error');
                 return;
@@ -1416,7 +1272,7 @@
             try {
                 window.showFormMessage('Generando Excel, por favor espera...', 'success');
 
-                const q = collection(db, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`);
+                const q = collection(currentDb, `artifacts/${currentAppId}/users/${currentUserId}/cambiosAceiteHibridos`);
                 const querySnapshot = await getDocs(q); // Usar getDocs para obtener todos los documentos una sola vez
 
                 if (querySnapshot.empty) {
@@ -1463,7 +1319,8 @@
 
                 // Procesar los datos filtrados y ordenados
                 filteredDocs.forEach((data) => {
-                    const formattedTableDate = new Date(data.fechaEjecucion + 'T00:00:00').toLocaleDateString('es-ES', {
+                    const formattedTableDate = new Date(data.fechaEjecucion + 'T00:00:00');
+                    const formattedTableDateString = formattedTableDate.toLocaleDateString('es-ES', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric'
@@ -1472,7 +1329,7 @@
                     const rowData = [
                         data.site || 'N/A',
                         data.numeroTarea || 'N/A',
-                        formattedTableDate || 'N/A',
+                        formattedTableDateString || 'N/A',
                         data.horometro !== undefined ? data.horometro.toFixed(1) : 'N/A',
                         data.aceite ? 'Sí' : 'No',
                         data.filtroAceite ? 'Sí' : 'No',
