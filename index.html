@@ -222,6 +222,8 @@
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md md:max-w-lg lg:max-w-xl text-center">
 
         <!-- Contenedor para mensajes generales (mantenimiento, etc.) - ELIMINADO DE AQUÍ -->
+        <!-- Moved formMessageDisplay here, outside specific views -->
+        <div id="formMessageDisplay" class="hidden"></div>
 
         <!-- Vista Principal: ¿Qué prefieres hacer hoy? -->
         <div id="mainView">
@@ -367,7 +369,8 @@
                 </div>
             </div>
 
-            <div id="formMessageDisplay" class="hidden"></div> <!-- Nuevo: para mensajes de formulario -->
+            <!-- Moved formMessageDisplay here, outside specific views -->
+            <!-- <div id="formMessageDisplay" class="hidden"></div> -->
 
             <button
                 id="saveCambiosAceiteHibridosButton"
